@@ -37,15 +37,12 @@ public:
 	//H -> 6
 	//L -> 7
 	uint8_t eight_registers[8];
-
-	//Game Dumped
-	char gameDump[0xFFFF];
-
-	uint8_t memory[];
 	
 	void loadGame(const char* path);
 
 	void runLife();
+
+	void loadBIOS();
 
 	void init();
 private:
@@ -61,5 +58,6 @@ private:
 	void setBCRegister();
 	void setDERegister();
 	void setHLRegister();
-	void loadBIOS();
+	void JP_NN(uint16_t opcode);
+	void NOP(uint16_t opcode);
 };

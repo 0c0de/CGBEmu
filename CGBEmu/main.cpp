@@ -20,13 +20,15 @@ void runApp() {
 	SDL_SetWindowSize(mainWindow, 600, 600);
 	CPU gameboy;
 	gameboy.init();
-	gameboy.loadGame("games/tetris.gb");
+	//gameboy.loadBIOS();
+	gameboy.loadGame("games/hello_world.gb");
 	if (mainWindow != NULL) {
 		bool isEmuRunning = true;
 
 		while (isEmuRunning) {
 			SDL_Event sdlEvent;
 			gameboy.runLife();
+			SDL_Delay(100);
 			while (SDL_PollEvent(&sdlEvent)) {
 				//Test things
 				if(sdlEvent.type == SDL_WINDOWEVENT) {

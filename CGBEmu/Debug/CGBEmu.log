@@ -1,26 +1,5 @@
 ﻿  CPU.cpp
   main.cpp
-c:\users\josel\source\repos\cgbemu\cgbemu\cpu.h(42): warning C4200: se ha utilizado una extensión no estándar: matriz de tamaño cero en struct/union (compilando archivo de origen main.cpp)
-  c:\users\josel\source\repos\cgbemu\cgbemu\cpu.h(42): note: Un constructor con valor predeterminado o un operador de asignación de copia o movimiento ignorará a este miembro. (compilando archivo de origen main.cpp)
-c:\users\josel\source\repos\cgbemu\cgbemu\cpu.h(44): error C2229: class 'CPU' tiene una matriz de tamaño cero no válida (compilando archivo de origen main.cpp)
-c:\users\josel\source\repos\cgbemu\cgbemu\cpu.h(44): warning C4200: se ha utilizado una extensión no estándar: matriz de tamaño cero en struct/union (compilando archivo de origen main.cpp)
-  c:\users\josel\source\repos\cgbemu\cgbemu\cpu.h(44): note: Un constructor con valor predeterminado o un operador de asignación de copia o movimiento ignorará a este miembro. (compilando archivo de origen main.cpp)
-c:\users\josel\source\repos\cgbemu\cgbemu\cpu.h(42): warning C4200: se ha utilizado una extensión no estándar: matriz de tamaño cero en struct/union (compilando archivo de origen CPU.cpp)
-  c:\users\josel\source\repos\cgbemu\cgbemu\cpu.h(42): note: Un constructor con valor predeterminado o un operador de asignación de copia o movimiento ignorará a este miembro. (compilando archivo de origen CPU.cpp)
-c:\users\josel\source\repos\cgbemu\cgbemu\cpu.h(44): error C2229: class 'CPU' tiene una matriz de tamaño cero no válida (compilando archivo de origen CPU.cpp)
-c:\users\josel\source\repos\cgbemu\cgbemu\cpu.h(44): warning C4200: se ha utilizado una extensión no estándar: matriz de tamaño cero en struct/union (compilando archivo de origen CPU.cpp)
-  c:\users\josel\source\repos\cgbemu\cgbemu\cpu.h(44): note: Un constructor con valor predeterminado o un operador de asignación de copia o movimiento ignorará a este miembro. (compilando archivo de origen CPU.cpp)
-c:\users\josel\source\repos\cgbemu\cgbemu\cpu.cpp(23): warning C4244: 'inicializando': conversión de 'std::streamoff' a 'int'; posible pérdida de datos
-c:\users\josel\source\repos\cgbemu\cgbemu\cpu.cpp(30): error C2664: 'std::basic_istream<char,std::char_traits<char>> &std::basic_istream<char,std::char_traits<char>>::read(_Elem *,std::streamsize)': el argumento 1 no puede convertirse de 'uint16_t []' a '_Elem *'
-          with
-          [
-              _Elem=char
-          ]
-  c:\users\josel\source\repos\cgbemu\cgbemu\cpu.cpp(30): note: Los tipos señalados no están relacionados; la conversión requiere reinterpret_cast, conversión de estilo de C o conversión de estilo de función
-c:\users\josel\source\repos\cgbemu\cgbemu\cpu.cpp(44): warning C4244: 'inicializando': conversión de 'std::streamoff' a 'int'; posible pérdida de datos
-c:\users\josel\source\repos\cgbemu\cgbemu\cpu.cpp(51): error C2664: 'std::basic_istream<char,std::char_traits<char>> &std::basic_istream<char,std::char_traits<char>>::read(_Elem *,std::streamsize)': el argumento 1 no puede convertirse de 'uint16_t []' a '_Elem *'
-          with
-          [
-              _Elem=char
-          ]
-  c:\users\josel\source\repos\cgbemu\cgbemu\cpu.cpp(51): note: Los tipos señalados no están relacionados; la conversión requiere reinterpret_cast, conversión de estilo de C o conversión de estilo de función
+c:\users\josel\source\repos\cgbemu\cgbemu\cpu.cpp(45): warning C4244: 'inicializando': conversión de 'std::streamoff' a 'int'; posible pérdida de datos
+c:\users\josel\source\repos\cgbemu\cgbemu\cpu.cpp(71): warning C4244: 'inicializando': conversión de 'std::streamoff' a 'int'; posible pérdida de datos
+  CGBEmu.vcxproj -> C:\Users\josel\source\repos\CGBEmu\Debug\CGBEmu.exe

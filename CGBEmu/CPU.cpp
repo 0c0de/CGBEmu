@@ -1,4 +1,7 @@
 #include "CPU.h"
+#include "mmu.h"
+
+MMU mmu;
 
 void CPU::init() {
 	pc = 0x100;
@@ -6,10 +9,28 @@ void CPU::init() {
 }
 
 void CPU::runLife() {
-	uint16_t opcode = gameDump[pc];
-	//cout << hex << pc << endl;
-	cout << hex << static_cast<unsigned>(opcode) << endl;
-	pc += 2;
+	uint16_t opcode = mmu.read8(pc);
+	cout << "Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
+	switch (opcode) {
+		case 0x00:
+			NOP(opcode);
+			break;
+		case 0xC3:
+			JP_NN(opcode);
+			break;
+		default:
+			cout << "Opcode: " << hex << static_cast<unsigned>(opcode) << " not implemented" << endl;
+	}
+}
+
+void CPU::NOP(uint16_t opcode) {
+	pc++;
+	cout << "NOP" << endl;
+}
+
+void CPU::JP_NN(uint16_t opcode) {
+	pc = mmu.read(pc + 1) + (mmu.read(pc + 2) << 8);
+	cout << "JP " << hex << pc << "h" << endl;
 }
 
 void CPU::loadGame(const char* path) {
@@ -26,14 +47,19 @@ void CPU::loadGame(const char* path) {
 	
 	//Set pos at the beginning
 	game.seekg(0, ifstream::beg);
+	char* tempGame = new char[gamesize];
 
 	//Dump content into the buffer we created
-	game.read(gameDump, gamesize);
+	game.read(tempGame, gamesize);
+	
+	for (int x = 0; x < gamesize; x++) {
+		mmu.memory[x] = tempGame[x];
+	}
 	game.close();
 }
 
 void CPU::loadBIOS() {
-	const char* path = "bios/bios.gb";
+	const char* path = "games/bios/bios.gb";
 
 	//Holds the game
 	ifstream bios(path, ifstream::binary);
@@ -56,7 +82,8 @@ void CPU::loadBIOS() {
 	
 	//Dump into the 256 byte rom memory of gameboy
 	for (int x = 0; x < biossize; x++) {
-		memory[x] = tempBios[x];
+		mmu.memory[x] = tempBios[x];
+		cout << mmu.memory[x] << endl;
 	}
 	bios.close();
 }
