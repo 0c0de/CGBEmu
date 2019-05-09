@@ -1,5 +1,4 @@
 ﻿  CPU.cpp
-  main.cpp
-c:\users\josel\source\repos\cgbemu\cgbemu\cpu.cpp(45): warning C4244: 'inicializando': conversión de 'std::streamoff' a 'int'; posible pérdida de datos
-c:\users\josel\source\repos\cgbemu\cgbemu\cpu.cpp(71): warning C4244: 'inicializando': conversión de 'std::streamoff' a 'int'; posible pérdida de datos
+c:\users\josel\source\repos\cgbemu\cgbemu\cpu.cpp(135): warning C4244: 'inicializando': conversión de 'std::streamoff' a 'int'; posible pérdida de datos
+c:\users\josel\source\repos\cgbemu\cgbemu\cpu.cpp(162): warning C4244: 'inicializando': conversión de 'std::streamoff' a 'int'; posible pérdida de datos
   CGBEmu.vcxproj -> C:\Users\josel\source\repos\CGBEmu\Debug\CGBEmu.exe

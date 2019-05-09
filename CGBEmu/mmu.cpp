@@ -8,3 +8,8 @@ uint16_t MMU::read(uint16_t addr) {
 uint8_t MMU::read8(uint16_t addr) {
 	return (uint8_t)memory[addr];
 }
+
+void MMU::PUSH(uint16_t addrToPush) {
+	memory[sp] = addrToPush;
+	sp--;
+}

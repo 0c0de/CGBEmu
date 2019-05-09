@@ -8,36 +8,18 @@ using namespace std;
 class CPU {
 
 public:
-	//RAM size is 8192 bytes
-	unsigned char RAM[8192];
+	//IME(Interrupt Master Enable) disabled by DI, enabled by EI
+	bool IME;
 
-	//VRAM size is 8192
-	unsigned char VRAM[8192];
+	//Count cicles for keep games at the same speed
+	uint16_t cicles;
 
 	//Program counter of gameboy
 	uint16_t pc;
-
-	//Stack Pointer
-	uint16_t sp;
-
-	//16 Bit registers
-	//AF -> 0
-	//BC -> 1
-	//DE -> 2
-	//HL -> 3
-	uint16_t sixteen_registers[4];
-
-	//Registers of gameboy
-	//A -> 0
-	//F -> 1
-	//B -> 2
-	//C -> 3
-	//D -> 4
-	//E -> 5
-	//H -> 6
-	//L -> 7
-	uint8_t eight_registers[8];
 	
+	//Screen bidimensional array
+	uint16_t gfx[160][144];
+
 	void loadGame(const char* path);
 
 	void runLife();
@@ -46,18 +28,14 @@ public:
 
 	void init();
 private:
-	void setARegister();
-	void setBRegister();
-	void setCRegister();
-	void setDRegister();
-	void setERegister();
-	void setFRegister();
-	void setHRegister();
-	void setLRegister();
-	void setAFRegister();
-	void setBCRegister();
-	void setDERegister();
-	void setHLRegister();
+	void addCycles(int ciclesToAdd);
+	void clearCycles();
 	void JP_NN(uint16_t opcode);
 	void NOP(uint16_t opcode);
+	void DI();
+	void EI();
+	void CALL_NN(uint16_t opcode);
+	void LD_A_NN(uint16_t opcode);
+	void CP_N(uint16_t opcode);
+	void JR_CC_N(uint16_t opcode);
 };
