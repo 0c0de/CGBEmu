@@ -7,7 +7,11 @@ GameboyFlags flags;
 
 void CPU::init() {
 	pc = 0x100;
-	mmu.sp = 0x2000;
+	mmu.sp = 0xFFFE;
+	reg.AF = 0x01b0;
+	reg.BC = 0x0013;
+	reg.DE = 0x00d8;
+	reg.HL = 0x014d;
 }
 
 void CPU::runLife() {
@@ -37,6 +41,12 @@ void CPU::runLife() {
 		case 0x20: case 0x28: case 0x30: case 0x38:
 			JR_CC_N(opcode);
 			break;
+		case 0x01: case 0x11: case 0x21: case 0x31:
+			LD_REG16_NN(opcode);
+			break;
+		case 0xf0:
+			LDH_A_N(opcode);
+			break;
 		default:
 			cout << "Opcode: " << hex << static_cast<unsigned>(opcode) << " not implemented" << endl;
 	}
@@ -52,21 +62,21 @@ void CPU::NOP(uint16_t opcode) {
 //Jump to a position
 void CPU::JP_NN(uint16_t opcode) {
 	pc = mmu.read(pc + 1) + (mmu.read(pc + 2) << 8);
-	cout << "JP, " << hex << pc << "h" << endl;
+	//cout << "JP, " << hex << pc << "h" << endl;
 	addCycles(12);
 }
 
 void CPU::DI() {
 	IME = false;
 	pc++;
-	cout << "DI" << endl;
+	//cout << "DI" << endl;
 	addCycles(4);
 }
 
 void CPU::EI() {
 	IME = true;
 	pc++;
-	cout << "EI" << endl;
+	//cout << "EI" << endl;
 	addCycles(4);
 }
 
@@ -76,7 +86,7 @@ void CPU::CALL_NN(uint16_t opcode) {
 	mmu.PUSH(nextInstruction);
 	pc = nn;
 	addCycles(12);
-	cout << "CALL, " << nn << "h" << endl;
+	//cout << "CALL, " << nn << "h" << endl;
 }
 
 void CPU::LD_A_NN(uint16_t opcode) {
@@ -84,42 +94,103 @@ void CPU::LD_A_NN(uint16_t opcode) {
 	reg.A = nn;
 	pc += 3;
 	addCycles(16);
-	cout << "LD A, " << nn << "h" << endl;
+	//cout << "LD A, " << nn << "h" << endl;
 }
 
 void CPU::CP_N(uint16_t opcode) {
-	uint16_t n = mmu.read(pc + 1);
-	reg.A - n == 1 ? flags.Z = true : flags.Z = false;
+	unsigned char n = (unsigned char)mmu.read(pc + 1);
+	cout << hex << static_cast<unsigned>(reg.A) << " - " << hex << static_cast<unsigned>(n) << " = " << (reg.A - n) << endl;
+	reg.A - n == 0 ? flags.Z = true : flags.Z = false;
 	flags.N = true;
 	reg.A < n ? flags.C = true : flags.C = false;
 	flags.H = false;
 	(((reg.A & 0xF) - (n & 0xF)) & 0x10) == 0x10 ? flags.H = true : flags.H = false;
 	pc += 2;
 	addCycles(8);
-	cout << "CP, " << hex << n << "h" << endl;
+	//cout << "CP, " << hex << static_cast<unsigned>(n) << "h" << endl;
 }
 
 void CPU::JR_CC_N(uint16_t opcode) {
+	unsigned char n = (unsigned char)mmu.read(pc + 1);
 	switch (opcode) {
 		//JR NZ, N
 	case 0x20: {
 			if (!flags.Z) {
-				int8_t n = (int8_t)mmu.read(pc - 1) << 4;
-				pc = n;
-				addCycles(4);
+				pc -= (0xff-n) - 1;
 			}
-			pc += 2;
+			else {
+				pc += 2;
+			}
+			//cout << "JR NZ, " << hex << pc << endl;
 			addCycles(8);
 		}
 		break;
-		case 0x28:
-			break;
-		case 0x30:
-			break;
-		case 0x38:
-			break;
+		//JR Z, N
+	case 0x28: {
+			if (flags.Z) {
+				pc -= (0xff - n)-1;
+			}
+			pc += 2;
+			addCycles(8);
+			//cout << "JR Z, " << hex << pc + (0xff - n) + 1 << endl;
+		}
+		break;
+		//JR NC, N
+	case 0x30: {
+			if (!flags.C) {
+				pc -= (0xff - n) - 1;
+			}
+			pc += 2;
+			addCycles(8);
+			//cout << "JR NC, " << hex << pc + (0xff - n) + 1 << endl;
+		}
+		break;
+		//JR C, N
+	case 0x38: {
+			if (flags.C) {
+				pc -= (0xff - n) - 1;
+			}
+			pc += 2;
+			addCycles(8);
+			//cout << "JR C, " << hex << pc + (0xff - n) + 1 << endl;
+		}
+		break;
 
 	}
+}
+
+void CPU::LD_REG16_NN(uint16_t opcode) {
+	uint16_t nn = mmu.read(pc + 1) + (mmu.read(pc + 2) << 8);
+	switch (opcode)
+	{
+	case 0x01:
+		reg.BC = nn;
+		//cout << "LD BC, " << hex << nn << endl;
+		break;
+	case 0x11:
+		reg.DE = nn;
+		//cout << "LD DE, " << hex << nn << endl;
+		break;
+	case 0x21:
+		reg.HL = nn;
+		//cout << "LD HL, " << hex << nn << endl;
+		break;
+	case 0x31:
+		mmu.sp = nn;
+		//cout << "LD SP, " << hex << nn << endl;
+		break;
+	}
+	pc += 3;
+	addCycles(12);
+}
+
+void CPU::LDH_A_N(uint16_t opcode) {
+	uint16_t n = (uint16_t)mmu.read(pc + 1);
+	uint16_t finalAddress = mmu.memory[0xFF00 + n];
+	reg.A = finalAddress;
+	addCycles(12);
+	pc += 2;
+	//cout << "LDH A, (FF00+" << hex << n << ") => " << hex << finalAddress << endl;
 }
 
 //Load the game into memory

@@ -8,7 +8,7 @@
 		//BC
 		//DE
 		//HL
-		//8 Bit registers
+//8 Bit registers
 		//A -> 0
 		//F -> 1
 		//B -> 2
@@ -19,14 +19,14 @@
 		//L -> 7
 struct GameboyRegisters
 {
-	uint16_t A;
-	uint16_t F;
-	uint16_t B;
-	uint16_t C;
-	uint16_t D;
-	uint16_t E;
-	uint16_t H;
-	uint16_t L;
+	uint8_t A;
+	uint8_t F;
+	uint8_t B;
+	uint8_t C;
+	uint8_t D;
+	uint8_t E;
+	uint8_t H;
+	uint8_t L;
 	uint16_t AF;
 	uint16_t BC;
 	uint16_t DE;
@@ -47,14 +47,18 @@ struct GameboyFlags {
 
 class MMU {
 	public:
-		//Game Memory
-		uint16_t memory[0xFFFF];
-
-		//RAM size is 8192 bytes
-		unsigned char RAM[0x2000];
-
-		//VRAM size is 8192
-		unsigned char VRAM[0x2000];
+		//Memory Map
+		uint8_t bios[0xFF];
+		uint16_t rom[0x4000];
+		uint16_t switchable_rom[0x4000];
+		uint16_t vram[0x2000];
+		uint16_t switchable_ram[0x2000];
+		uint16_t ram[0x2000];
+		uint16_t eram[0x2000];
+		uint16_t echo_ram[0x1E00];
+		uint8_t sprite_attrib[0xA0];
+		uint8_t io[0x4C];
+		uint8_t internal_ram[0x7F];
 
 		//Stack Pointer
 		uint16_t sp;
@@ -64,4 +68,7 @@ class MMU {
 		uint8_t read8(uint16_t addr);
 
 		void PUSH(uint16_t addrToPush);
+
+	private:
+		bool isInBIOS = false;
 };

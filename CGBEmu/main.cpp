@@ -28,7 +28,7 @@ void runApp() {
 		while (isEmuRunning) {
 			SDL_Event sdlEvent;
 			gameboy.runLife();
-			SDL_Delay(100);
+			SDL_Delay(1);
 			while (SDL_PollEvent(&sdlEvent)) {
 				//Test things
 				if(sdlEvent.type == SDL_WINDOWEVENT) {

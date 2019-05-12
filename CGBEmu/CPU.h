@@ -38,4 +38,6 @@ private:
 	void LD_A_NN(uint16_t opcode);
 	void CP_N(uint16_t opcode);
 	void JR_CC_N(uint16_t opcode);
+	void LD_REG16_NN(uint16_t opcode);
+	void LDH_A_N(uint16_t opcode);
 };
