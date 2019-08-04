@@ -49,12 +49,10 @@ class MMU {
 	public:
 		//Memory Map
 		uint8_t bios[0xFF];
-		uint16_t rom[0x4000];
-		uint16_t switchable_rom[0x4000];
+		uint16_t rom[0x8000];
 		uint16_t vram[0x2000];
-		uint16_t switchable_ram[0x2000];
+		uint16_t wram[0x2000];
 		uint16_t ram[0x2000];
-		uint16_t eram[0x2000];
 		uint16_t echo_ram[0x1E00];
 		uint8_t sprite_attrib[0xA0];
 		uint8_t io[0x4C];
@@ -63,11 +61,24 @@ class MMU {
 		//Stack Pointer
 		uint16_t sp;
 
+		//Read 16 Bit address
 		uint16_t read(uint16_t addr);
 
+		//Read 8 Bit address
 		uint8_t read8(uint16_t addr);
 
-		void PUSH(uint16_t addrToPush);
+		//Write 16 Bits value
+		void write(uint16_t addr, uint16_t value);
+
+		//Write 8 Bit Value
+		void write8(uint16_t addr, uint8_t value);
+
+		//Push a value to the RAM STACK
+		void push(uint16_t sp, uint16_t addr);
+
+		//Pops out a value from the RAM STACK
+		void pop();
+
 
 	private:
 		bool isInBIOS = false;
