@@ -23,7 +23,25 @@ void CPU::runLife() {
 		case 0x00:
 			NOP();
 			break;
+		case 0x7F: case 0x78: case 0x79: case 0x7A: case 0x7B: case 0x7C: case 0x7D: case 0x7E: 
+		case 0x40: case 0x41: case 0x42: case 0x43: case 0x44: case 0x45: case 0x46: case 0x48: 
+		case 0x49: case 0x4A: case 0x4B: case 0x4C: case 0x4D: case 0x4E: case 0x50: case 0x51: 
+		case 0x52: case 0x53: case 0x54: case 0x55: case 0x56: case 0x58: case 0x59: case 0x36:
+		case 0x5A: case 0x5B: case 0x5C: case 0x5D: case 0x5E: case 0x60: case 0x61: case 0x62:
+		case 0x63: case 0x64: case 0x65: case 0x66: case 0x68: case 0x69: case 0x6A: case 0x6B:
+		case 0x6C: case 0x6D: case 0x6E: case 0x70: case 0x71: case 0x72: case 0x73: case 0x74:
+		case 0x75:  
+			LD_r1_r2(opcode);
+			break;
 		case 0x06: case 0x0E: case 0x16: case 0x1E: case 0x26: case 0x2E:
+			LD_NN_N(opcode);
+			break;
+		case 0x0A: case 0x1A: case 0x3E: case 0xFA:
+			LD_A_N(opcode);
+			break;
+		case 0x47: case 0x4F: case 0x57: case 0x5F: case 0x67: case 0x6F: case 0x02: case 0x12:
+		case 0x77: case 0xEA:
+			LD_N_A(opcode);
 		case 0xC3:
 			JP_NN(opcode);
 			break;
@@ -35,9 +53,6 @@ void CPU::runLife() {
 			break;
 		case 0xCD:
 			CALL_NN(opcode);
-			break;
-		case 0xFA:
-			LD_A_regC(opcode);
 			break;
 		case 0xFE: case 0xBF: case 0xB8: case 0xB9: case 0xBA: case 0xBB: case 0xBC: case 0xBD: case 0xBE:
 			CP_N(opcode);
@@ -399,6 +414,8 @@ void CPU::LD_r1_r2(uint16_t opcode) {
 }
 
 void CPU::LD_A_N(uint16_t opcode) {
+	uint16_t nn = mmu.read(pc + 1);
+	uint16_t n = mmu.read8(pc + 1);
 	switch (opcode)
 	{
 	case 0x7F:
@@ -450,16 +467,109 @@ void CPU::LD_A_N(uint16_t opcode) {
 		addCycles(8);
 		break;
 	case 0xFA:
-		reg.A = mmu.read(reg.DE);
-		pc+=3;
+		reg.A = mmu.read8(nn);
+		pc += 3;
 		addCycles(16);
 		break;
 	case 0x3E:
-		reg.A = mmu.read8(reg.DE);
+		reg.A = mmu.read8(n);
 		pc+=2;
 		addCycles(8);
 		break;
 	default:
+		break;
+	}
+}
+
+void CPU::LD_N_A(uint16_t opcode) {
+	switch (opcode)
+	{
+	case 0x47:
+		reg.B = reg.A;
+		pc += 2;
+		addCycles(4);
+		break;
+	case 0x4F:
+		reg.C = reg.A;
+		pc += 2;
+		addCycles(4);
+		break;
+	case 0x57:
+		reg.D = reg.A;
+		pc += 2;
+		addCycles(4);
+		break;
+	case 0x5F:
+		reg.E = reg.A;
+		pc += 2;
+		addCycles(4);
+		break;
+	case 0x67:
+		reg.H = reg.A;
+		pc += 2;
+		addCycles(4);
+		break;
+	case 0x6F:
+		reg.L = reg.A;
+		pc += 2;
+		addCycles(4);
+		break;
+	case 0x02:
+		reg.B = reg.A;
+		pc += 2;
+		addCycles(4);
+		break;
+	case 0x12:
+		reg.B = reg.A;
+		pc += 2;
+		addCycles(4);
+		break;
+	case 0x77:
+		reg.B = reg.A;
+		pc += 2;
+		addCycles(4);
+		break;
+	case 0xEA:
+		reg.B = reg.A;
+		pc += 2;
+		addCycles(4);
+		break;
+	default:
+		pc += 2;
+		break;
+	}
+}
+
+//Load value from nn to n
+//n is a 16 bit register
+//nn 16 bit inmediate value
+void CPU::LD_N_NN(uint16_t opcode) {
+	uint16_t nn = mmu.read(pc + 1);
+	switch (opcode)
+	{
+	case 0x01:
+		reg.BC = nn;
+		cout << "LD BC, " << hex << nn << endl;
+		pc += 3;
+		addCycles(12);
+		break;
+	case 0x11:
+		reg.DE = nn;
+		cout << "LD DE, " << hex << nn << endl;
+		pc += 3;
+		addCycles(12);
+		break;
+	case 0x21:
+		reg.HL = nn;
+		cout << "LD HL, " << hex << nn << endl;
+		pc += 3;
+		addCycles(12);
+		break;
+	case 0x31:
+		mmu.sp = nn;
+		cout << "LD SP, " << hex << nn << endl;
+		pc += 3;
+		addCycles(12);
 		break;
 	}
 }
@@ -498,14 +608,6 @@ void CPU::CALL_NN(uint16_t opcode) {
 	pc = nn;
 	addCycles(12);
 	cout << "CALL, " << nn << "h" << endl;
-}
-
-void CPU::LD_A_regC(uint16_t opcode) {
-	uint16_t nn = mmu.read(pc+1);
-	reg.A = mmu.read8(nn);
-	pc += 3;
-	
-	cout << "LD A, (" << nn << ")h" << endl;
 }
 
 void CPU::CP_N(uint16_t opcode) {
@@ -662,37 +764,6 @@ void CPU::JR_CC_N(uint16_t opcode) {
 		}
 		break;
 
-	}
-}
-
-void CPU::LD_N_NN(uint16_t opcode) {
-	uint16_t nn = mmu.read(pc+1);
-	switch (opcode)
-	{
-	case 0x01:
-		reg.BC = nn;
-		cout << "LD BC, " << hex << nn << endl;
-		pc += 3;
-		addCycles(12);
-		break;
-	case 0x11:
-		reg.DE = nn;
-		cout << "LD DE, " << hex << nn << endl;
-		pc += 3;
-		addCycles(12);
-		break;
-	case 0x21:
-		reg.HL = nn;
-		cout << "LD HL, " << hex << nn << endl;
-		pc += 3;
-		addCycles(12);
-		break;
-	case 0x31:
-		mmu.sp = nn;
-		cout << "LD SP, " << hex << nn << endl;
-		pc += 3;
-		addCycles(12);
-		break;
 	}
 }
 
