@@ -58,6 +58,8 @@ class MMU {
 		uint8_t io[0x4C];
 		uint8_t internal_ram[0x7F];
 
+		uint16_t stack[0xFFFF];
+
 		//Stack Pointer
 		uint16_t sp;
 
@@ -74,10 +76,16 @@ class MMU {
 		void write8(uint16_t addr, uint8_t value);
 
 		//Push a value to the RAM STACK
-		void push(uint16_t sp, uint16_t addr);
+		void push(uint16_t value);
 
 		//Pops out a value from the RAM STACK
-		void pop();
+		void pop(uint16_t *value);
+
+		//Function for setting 16bit registers
+		void setRegisters16Bit(GameboyRegisters *reg, const char *regName, uint16_t valueToSet);
+
+		//Function for setting 8bit registers
+		void setRegisters8Bit(GameboyRegisters *reg, const char *regName, uint8_t valueToSet);
 
 
 	private:

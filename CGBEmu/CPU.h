@@ -32,7 +32,17 @@ public:
 	
 	void clearCycles();
 
+	MMU *getMMUValues();
+
+	GameboyFlags *getFlagState();
+
+	GameboyRegisters *getGameboyRegisters();
+
 private:
+
+	//Half-Carry function, formula obtained from stackoverflow, thank you :) --> https://stackoverflow.com/questions/8868396/game-boy-what-constitutes-a-half-carry
+	bool isHalfCarry(uint8_t a, uint8_t b, std::string type);
+
 	//8-Bit(1 Byte) Loads
 	//LD nn,n
 	void LD_NN_N(uint16_t opcode);
@@ -59,18 +69,18 @@ private:
 	void LDD_regHL_A(uint16_t opcode);
 
 	//LDI A, (HL)
-	void LDI_A_regHL(uint16_t opcode);
+	void LDI_A_regHL();
 
 	//LDI (HL), A
-	void LDI_regHL_A(uint16_t opcode);
+	void LDI_regHL_A();
 
 	//LDH (n), A
 	//Put A into memory address $FF00+n.
-	void LDH_N_A(uint16_t opcode);
+	void LDH_N_A();
 
 	//LDH A, (n) 
 	//Put memory address $FF00 + n into A.
-	void LDH_A_N(uint16_t opcode);
+	void LDH_A_N();
 
 	//16-Bit(2 Bytes) Loads
 	//LD n, nn

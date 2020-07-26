@@ -1,2 +1,13 @@
-﻿  main.cpp
-c:\users\josel\source\repos\cgbemu\cgbemu\main.cpp(1): fatal error C1083: No se puede abrir el archivo incluir: 'SDL.h': No such file or directory
+﻿  CPU.cpp
+c:\users\josel\cgbemu\cgbemu\cpu.cpp(780): warning C4244: 'inicializando': conversión de 'std::streamoff' a 'int'; posible pérdida de datos
+  main.cpp
+  mmu.cpp
+c:\users\josel\cgbemu\cgbemu\mmu.cpp(27): warning C4244: 'return': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
+c:\users\josel\cgbemu\cgbemu\mmu.cpp(30): warning C4244: 'return': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
+c:\users\josel\cgbemu\cgbemu\mmu.cpp(33): warning C4244: 'return': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
+c:\users\josel\cgbemu\cgbemu\mmu.cpp(36): warning C4244: 'return': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
+c:\users\josel\cgbemu\cgbemu\mmu.cpp(38): warning C4244: 'return': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
+c:\users\josel\cgbemu\cgbemu\mmu.cpp(44): warning C4244: 'return': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
+  Generando código...
+c:\users\josel\cgbemu\cgbemu\mmu.cpp(68): warning C4715: 'MMU::read8': no todas las rutas de acceso de control devuelven un valor
+LINK : fatal error LNK1561: se debe definir el punto de entrada
