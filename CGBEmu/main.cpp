@@ -48,16 +48,17 @@ void runApp() {
 	//Load the bios of the GameBoy
 	//gameboy.loadBIOS();
 	//Load the game specified
-	//gameboy.loadGame("games/hello_world.gb");
+	//gameboy.loadGame("games/test01CPU.gb");
 	gameboy.loadGame("F:/Tetris.gb");
+	std::thread t1(&CPU::runCPU, &gameboy);
+	//gameboy.runLife();
 	//gameboy.loadGame("F:/hello-world.gb");
 	if (mainWindow != NULL) {
 		bool isEmuRunning = true;
 		//Infinite loop for running gameboy
-
 		while (isEmuRunning) {
 			SDL_Event sdlEvent;
-			gameboy.runLife();
+			//SDL_Delay(150);
 			//Handle event
 			while (SDL_PollEvent(&sdlEvent)) {
 				ImGui_ImplSDL2_ProcessEvent(&sdlEvent);
@@ -95,7 +96,7 @@ void runApp() {
 
 
 			//Renders to the screen all things
-			  // Rendering
+			// Rendering
 			ImGui::Render();
 			glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
 			glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);

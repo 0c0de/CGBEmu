@@ -2,7 +2,9 @@
 #include <iostream>
 #include <stdio.h>
 #include "mmu.h"
+#include <bitset>
 #include <fstream>
+#include <thread>
 using namespace std;
 //CPU is similar to Z80 but with modified instructions
 class CPU {
@@ -24,6 +26,8 @@ public:
 
 	void runLife();
 
+	void runCPU();
+
 	void loadBIOS();
 
 	void init();
@@ -43,6 +47,9 @@ private:
 	//Half-Carry function, formula obtained from stackoverflow, thank you :) --> https://stackoverflow.com/questions/8868396/game-boy-what-constitutes-a-half-carry
 	bool isHalfCarry(uint8_t a, uint8_t b, std::string type);
 
+	//Half-Carry function, same thing but for 16bit
+	bool isHalfCarry16Bit(uint16_t a, uint16_t b, std::string type);
+
 	//8-Bit(1 Byte) Loads
 	//LD nn,n
 	void LD_NN_N(uint16_t opcode);
@@ -57,16 +64,16 @@ private:
 	void LD_N_A(uint16_t opcode);
 	
 	//LD A, (C)
-	void LD_A_regC(uint16_t opcode);
+	void LD_A_regC();
 	
 	//LD (C),A
-	void LD_regC_A(uint16_t opcode);
+	void LD_regC_A();
 	
 	//LDD A, (HL)
-	void LDD_A_regHL(uint16_t opcode);
+	void LDD_A_regHL();
 
 	//LDD (HL), A
-	void LDD_regHL_A(uint16_t opcode);
+	void LDD_regHL_A();
 
 	//LDI A, (HL)
 	void LDI_A_regHL();
@@ -95,7 +102,7 @@ private:
 
 	//LD (nn), SP
 	//Put Stack Pointer (SP) at address n.
-	void LD_NN_SP(uint16_t opcode);
+	void LD_NN_SP();
 
 	//PUSH NN
 	/*Push register pair nn onto stack.
@@ -156,7 +163,7 @@ private:
 
 	//ADD SP, n
 	//Adds n to stack pointer(SP)
-	void ADD_SP_N(uint16_t opcode );
+	void ADD_SP_N();
 
 	//INC nn
 	//Increment register nn
@@ -264,6 +271,9 @@ private:
 	//Reset bit b in register r
 	void RES_B_R(uint16_t opcode);
 
+	//LD SP, HL
+	//Load HL into SP
+	void LD_SP_HL();
 
 	//Jumps
 	//JP NN
@@ -311,4 +321,8 @@ private:
 	/*Pop two bytes from stack and jump to that address, then enables
 	Interrups*/
 	void RETI();
+
+	//SWAP n CB Opcode
+	//Swap upper & lower nibles of n.
+	void CB_SWAP_N(uint16_t opcode);
 };

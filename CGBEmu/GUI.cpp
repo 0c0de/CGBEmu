@@ -51,17 +51,17 @@ void drawMMU(MMU *mmu) {
 
 		if (showRAM) {
 			ImGui::Text("RAM");
-			ROMData.DrawContents((void*)(mmu->ram), 0x2000);
+			ROMData.DrawContents((void*)(mmu->ram), 0xBFFF);
 		}
 
 		if (showVRAM) {
 			ImGui::Text("VRAM");
-			ROMData.DrawContents((void*)(mmu->vram), 0x2000);
+			ROMData.DrawContents((void*)(mmu->vram), 0x9FFF);
 		}
 
 		if (showWRAM) {
 			ImGui::Text("WRAM");
-			ROMData.DrawContents((void*)(mmu->wram), 0x2000);
+			ROMData.DrawContents((void*)(mmu->wram), 0xDFFF);
 		}
 
 		if (showIO) {

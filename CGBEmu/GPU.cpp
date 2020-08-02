@@ -7,7 +7,7 @@ void GPU::step(CPU *gameboy, MMU *mmu) {
 	{
 		case 0:
 			//Horizontal Blanking
-			std::cout << "Entering Horizontal Blanking" << std::endl;
+			//std::cout << "Entering Horizontal Blanking" << std::endl;
 			if (clock >= 204) {
 				clock = 0;
 
@@ -27,7 +27,7 @@ void GPU::step(CPU *gameboy, MMU *mmu) {
 			break;
 		case 1:
 			//Vertical Blanking
-			std::cout << "Entering Vertical Blanking" << std::endl;
+			//std::cout << "Entering Vertical Blanking" << std::endl;
 			if (clock >= 456) {
 				clock = 0;
 				line++;
@@ -43,7 +43,7 @@ void GPU::step(CPU *gameboy, MMU *mmu) {
 			break;
 		case 2:
 			//Read OAM
-			std::cout << "Reading OAM Mode" << std::endl;
+			//std::cout << "Reading OAM Mode" << std::endl;
 			if (clock >= 80) {
 				clock = 0;
 				mode = 3;
@@ -51,7 +51,7 @@ void GPU::step(CPU *gameboy, MMU *mmu) {
 			break;
 		case 3:
 			//Read VRAM for generate picture
-			std::cout << "Reading VRAM for generate picture" << std::endl;
+			//std::cout << "Reading VRAM for generate picture" << std::endl;
 			if (clock >= 172) {
 
 				//Enter Horizontal Blanking
