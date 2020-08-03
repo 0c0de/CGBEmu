@@ -48,8 +48,8 @@ void runApp() {
 	//Load the bios of the GameBoy
 	//gameboy.loadBIOS();
 	//Load the game specified
-	//gameboy.loadGame("games/hello_world.gb");
-	gameboy.loadGame("F:/Tetris.gb");
+	gameboy.loadGame("games/hello_world.gb");
+	//gameboy.loadGame("F:/Tetris.gb");
 	//gameboy.loadGame("F:/hello-world.gb");
 	if (mainWindow != NULL) {
 		bool isEmuRunning = true;
@@ -122,6 +122,7 @@ int main(int argc, char* argv[]) {
 		runApp();
 	}
 	else {
+		cout << "An error ocurred when initiating SDL: " << SDL_GetError() << endl;
 		SDL_Quit();
 	}
 	SDL_Delay(500);
