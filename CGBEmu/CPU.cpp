@@ -57,6 +57,11 @@ void CPU::init() {
 	mmu.write8(0xFFFF, 0x00);
 }
 
+uint8_t swapNibbles(uint8_t x)
+{
+	return ((x & 0x0F) << 4 | (x & 0xF0) >> 4);
+}
+
 void CPU::addCycles(int ciclesToAdd) {
 	cicles += ciclesToAdd;
 }
@@ -69,21 +74,25 @@ MMU *CPU::getMMUValues() {
 	return &mmu;
 }
 
-void CPU::runLife() {
-	uint8_t opcode = mmu.read8(pc);
-	//cout << "PC: " << hex << static_cast<unsigned>(pc) << "  |   Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
-	switch (opcode) {
+void CPU::runCPU() {
+	uint8_t cb_opcode;
+	uint8_t opcode;
+	while (true)
+	{
+		opcode = mmu.read8(pc);
+		cout << "PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
+		switch (opcode) {
 		case 0x00:
 			NOP();
 			break;
-		case 0x7F: case 0x78: case 0x79: case 0x7A: case 0x7B: case 0x7C: case 0x7D: case 0x7E: 
-		case 0x40: case 0x41: case 0x42: case 0x43: case 0x44: case 0x45: case 0x46: case 0x48: 
-		case 0x49: case 0x4A: case 0x4B: case 0x4C: case 0x4D: case 0x4E: case 0x50: case 0x51: 
+		case 0x7F: case 0x78: case 0x79: case 0x7A: case 0x7B: case 0x7C: case 0x7D: case 0x7E:
+		case 0x40: case 0x41: case 0x42: case 0x43: case 0x44: case 0x45: case 0x46: case 0x48:
+		case 0x49: case 0x4A: case 0x4B: case 0x4C: case 0x4D: case 0x4E: case 0x50: case 0x51:
 		case 0x52: case 0x53: case 0x54: case 0x55: case 0x56: case 0x58: case 0x59: case 0x36:
 		case 0x5A: case 0x5B: case 0x5C: case 0x5D: case 0x5E: case 0x60: case 0x61: case 0x62:
 		case 0x63: case 0x64: case 0x65: case 0x66: case 0x68: case 0x69: case 0x6A: case 0x6B:
 		case 0x6C: case 0x6D: case 0x6E: case 0x70: case 0x71: case 0x72: case 0x73: case 0x74:
-		case 0x75:  
+		case 0x75:
 			LD_r1_r2(opcode);
 			break;
 		case 0x06: case 0x0E: case 0x16: case 0x1E: case 0x26: case 0x2E:
@@ -114,6 +123,9 @@ void CPU::runLife() {
 		case 0x20: case 0x28: case 0x30: case 0x38:
 			JR_CC_N(opcode);
 			break;
+		case 0xE9:
+			JP_regHL();
+			break;
 		case 0x01: case 0x11: case 0x21: case 0x31:
 			LD_N_NN(opcode);
 			break;
@@ -138,27 +150,538 @@ void CPU::runLife() {
 		case 0xE0:
 			LDH_N_A();
 			break;
+		case 0x3A:
+			LDD_A_regHL();
+			break;
+		case 0x32:
+			LDD_regHL_A();
+			break;
+		case 0xAF: case 0xA8: case 0xA9: case 0xAA: case 0xAB: case 0xAC: case 0xAD: case 0xAE: case 0xEE:
+			XOR_N(opcode);
+			break;
+		case 0xB0: case 0xB1: case 0xB2: case 0xB3: case 0xB4: case 0xB5: case 0xB6: case 0xB7: case 0xF6:
+			OR_N(opcode);
+			break;
+		case 0xA0: case 0xA1: case 0xA2: case 0xA3: case 0xA4: case 0xA5: case 0xA6: case 0xA7: case 0xE6:
+			AND_N(opcode);
+			break;
+		case 0xC7: case 0xCF: case 0xD7: case 0xDF: case 0xE7: case 0xEF: case 0xF7: case 0xFF:
+			RST_N(opcode);
+			break;
+		case 0xE2:
+			LD_regC_A();
+			break;
+		case 0x0B: case 0x1B: case 0x2B: case 0x3B:
+			DEC_NN(opcode);
+			break;
+		case 0x2F:
+			CPL();
+			break;
+		case 0x80: case 0x81: case 0x82: case 0x83: case 0x84: case 0x85: case 0x86: case 0x87: case 0xC6:
+			ADD_A_N(opcode);
+			break;
+		case 0x88: case 0x89: case 0x8A: case 0x8B: case 0x8C: case 0x8D: case 0x8E: case 0x8F: case 0xCE:
+			ADC_A_N(opcode);
+			break;
+		case 0xF1: case 0xD1: case 0xC1: case 0xE1:
+			POP_NN(opcode);
+			break;
+		case 0xF5: case 0xD5: case 0xC5: case 0xE5:
+			PUSH_NN(opcode);
+			break;
+		case 0xF9:
+			LD_SP_HL();
+			break;
+		case 0x08:
+			LD_NN_SP();
+			break;
+		case 0x09: case 0x19: case 0x29: case 0x39:
+			ADD_HL_N(opcode);
+			break;
+		case 0xE8:
+			ADD_SP_N();
+			break;
+		case 0x03: case 0x13: case 0x23: case 0x33:
+			INC_NN(opcode);
+			break;
+		case 0xCB:
+			cb_opcode = mmu.read8(pc + 1);
+			switch (cb_opcode)
+			{
+				case 0x30: case 0x31: case 0x32: case 0x33: case 0x34: case 0x35: case 0x36: case 0x37:
+					CB_SWAP_N(cb_opcode);
+					break;
+				default:
+					cout << "Opcode CB " << hex << static_cast<unsigned>(cb_opcode) << " not implemented" << endl;
+					break;
+			}
+			break;
 		default:
 			cout << "Opcode: " << hex << static_cast<unsigned>(opcode) << " not implemented" << endl;
 			break;
+		}
 	}
+}
+
+bool isKthBitSet(int n, int k)
+{
+	if (n & (1 << (k - 1))){
+		return true;
+	}else {
+		return false;
+	}
+}
+
+bool isCarry8bit(int n) {
+	return n > 0xFF;
+}
+
+bool isCarry16bit(int n) {
+	return n > 0xFFFF;
 }
 
 bool CPU::isHalfCarry(uint8_t a, uint8_t b, std::string type) {
 	if (type == "ADD") {
-		return (((a & 0xF) + (b & 0xF)) & 0x10) == 0x10;
+		return (((a & 0x0F) + (b & 0x0F)) & 0x10) == 0x10;
 	}
 	else {
-		return ((a & 0xF) - (b & 0xF)) < 0;
+		return ((a & 0x0F) - (b & 0x0F)) < 0;
+	}
+}
+
+bool CPU::isHalfCarry16Bit(uint16_t a, uint16_t b, std::string type) {
+	if (type == "ADD") {
+		return (((a & 0x00FF) + (b & 0x00FF)) & 0x0100) == 0x0100;
+	}
+	else {
+		return ((a & 0x00FF) - (b & 0x00FF)) < 0;
 	}
 }
 
 void CPU::RET() {
 	uint16_t addrPoped;
 	mmu.pop(&addrPoped);
-	std::cout << "RET, Address poped: " << hex << addrPoped << std::endl;
+	//std::cout << "RET, Address poped: " << hex << addrPoped << std::endl;
 	addCycles(8);
 	pc = addrPoped;
+}
+
+void CPU::LDD_A_regHL() {
+	mmu.setRegisters8Bit(&reg, "A", mmu.read8(reg.HL));
+	mmu.setRegisters16Bit(&reg, "HL", reg.HL - 1);
+	addCycles(8);
+	pc++;
+}
+
+void CPU::LDD_regHL_A() {
+	//std::cout << "Writing value " << hex << static_cast<unsigned>(reg.A) << ", in address: " << hex << static_cast<unsigned>(reg.HL) << std::endl;
+	mmu.write8(reg.HL, reg.A);
+	mmu.setRegisters16Bit(&reg, "HL", reg.HL - 1);
+	addCycles(8);
+	pc++;
+}
+
+void CPU::XOR_N(uint16_t opcode) {
+	uint8_t n = 0;
+	switch (opcode) {
+		case 0xAF:
+			n = reg.A ^ reg.A;
+			//std::cout << "XOR A " << hex << static_cast<unsigned>(n) << std::endl;
+			if (n == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+			flags.C = false;
+			flags.N = false;
+			flags.H = false;
+			mmu.setRegisters8Bit(&reg, "A", n);
+			addCycles(4);
+			pc++;
+			break; 
+		case 0xA8:
+			n = reg.B ^ reg.A;
+			if (n == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+			flags.C = false;
+			flags.N = false;
+			flags.H = false;
+			mmu.setRegisters8Bit(&reg, "A", n); 
+			addCycles(4);
+			pc++;
+			break;
+		case 0xA9:
+			n = reg.C ^ reg.A;
+			if (n == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+			flags.C = false;
+			flags.N = false;
+			flags.H = false;
+			mmu.setRegisters8Bit(&reg, "A", n); 
+			addCycles(4);
+			pc++;
+			break;
+		case 0xAA:
+			n = reg.D ^ reg.A;
+			if (n == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+			flags.C = false;
+			flags.N = false;
+			flags.H = false;
+			mmu.setRegisters8Bit(&reg, "A", n);
+			addCycles(4);
+			pc++;
+			break;
+		case 0xAB:
+			n = reg.E ^ reg.A;
+			if (n == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+			flags.C = false;
+			flags.N = false;
+			flags.H = false;
+			mmu.setRegisters8Bit(&reg, "A", n);
+			addCycles(4);
+			pc++;
+			break;
+		case 0xAC:
+			n = reg.H ^ reg.A;
+			if (n == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+			flags.C = false;
+			flags.N = false;
+			flags.H = false;
+			mmu.setRegisters8Bit(&reg, "A", n);
+			addCycles(4);
+			pc++;
+			break;
+		case 0xAD:
+			n = reg.L ^ reg.A;
+			if (n == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+			flags.C = false;
+			flags.N = false;
+			flags.H = false;
+			mmu.setRegisters8Bit(&reg, "A", n);
+			addCycles(4);
+			pc++;
+			break;
+		case 0xAE:
+			n = mmu.read8(reg.HL) ^ reg.A;
+			if (n == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+			flags.C = false;
+			flags.N = false;
+			flags.H = false;
+			mmu.setRegisters8Bit(&reg, "A", n);
+			addCycles(8);
+			pc++;
+			break;
+		case 0xEE:
+			n = mmu.read8(pc + 1) ^ reg.A;
+			if (n == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+			flags.C = false;
+			flags.N = false;
+			flags.H = false;
+			mmu.setRegisters8Bit(&reg, "A", n);
+			addCycles(8);
+			pc++;
+			break;
+	}
+}
+
+void CPU::OR_N(uint16_t opcode) {
+	uint8_t n;
+	switch (opcode)
+	{
+		case 0xB7:
+			n = reg.A | reg.A;
+			mmu.setRegisters8Bit(&reg, "A", n);
+
+			if (n == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+			addCycles(4);
+			pc++;
+			break;
+		case 0xB0:
+			n = reg.B | reg.A;
+			mmu.setRegisters8Bit(&reg, "A", n);
+
+			if (n == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+			addCycles(4);
+			pc++;
+			break;
+		case 0xB1:
+			n = reg.C | reg.A;
+			mmu.setRegisters8Bit(&reg, "A", n);
+
+			if (n == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+			addCycles(4);
+			pc++;
+			break;
+		case 0xB2:
+			n = reg.D | reg.A;
+			mmu.setRegisters8Bit(&reg, "A", n);
+
+			if (n == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+			addCycles(4);
+			pc++;
+			break;
+		case 0xB3:
+			n = reg.E | reg.A;
+			mmu.setRegisters8Bit(&reg, "A", n);
+
+			if (n == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+			addCycles(4);
+			pc++;
+			break;
+		case 0xB4:
+			n = reg.H | reg.A;
+			mmu.setRegisters8Bit(&reg, "A", n);
+
+			if (n == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+			addCycles(4);
+			pc++;
+			break;
+		case 0xB5:
+			n = reg.L | reg.A;
+			mmu.setRegisters8Bit(&reg, "A", n);
+
+			if (n == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+			addCycles(4);
+			pc++;
+			break;
+		case 0xB6:
+			n = mmu.read8(reg.HL) | reg.A;
+			mmu.setRegisters8Bit(&reg, "A", n);
+
+			if (n == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+			addCycles(8);
+			pc++;
+			break;
+		case 0xF6:
+			n = mmu.read8(pc+1) | reg.A;
+			mmu.setRegisters8Bit(&reg, "A", n);
+
+			if (n == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+			addCycles(8);
+			pc+=2;
+			break;
+	default:
+		break;
+	}
+
+	flags.C = false;
+	flags.H = false;
+	flags.N = false;
+}
+
+void CPU::AND_N(uint16_t opcode) {
+	uint8_t n;
+	switch (opcode)
+	{
+	case 0xA7:
+		n = reg.A & reg.A;
+		mmu.setRegisters8Bit(&reg, "A", n);
+
+		if (n == 0) {
+			flags.Z = true;
+		}
+		else {
+			flags.Z = false;
+		}
+		addCycles(4);
+		pc++;
+		break;
+	case 0xA0:
+		n = reg.B & reg.A;
+		mmu.setRegisters8Bit(&reg, "A", n);
+
+		if (n == 0) {
+			flags.Z = true;
+		}
+		else {
+			flags.Z = false;
+		}
+		addCycles(4);
+		pc++;
+		break;
+	case 0xA1:
+		n = reg.C & reg.A;
+		mmu.setRegisters8Bit(&reg, "A", n);
+
+		if (n == 0) {
+			flags.Z = true;
+		}
+		else {
+			flags.Z = false;
+		}
+		addCycles(4);
+		pc++;
+		break;
+	case 0xA2:
+		n = reg.D & reg.A;
+		mmu.setRegisters8Bit(&reg, "A", n);
+
+		if (n == 0) {
+			flags.Z = true;
+		}
+		else {
+			flags.Z = false;
+		}
+		addCycles(4);
+		pc++;
+		break;
+	case 0xA3:
+		n = reg.E & reg.A;
+		mmu.setRegisters8Bit(&reg, "A", n);
+
+		if (n == 0) {
+			flags.Z = true;
+		}
+		else {
+			flags.Z = false;
+		}
+		addCycles(4);
+		pc++;
+		break;
+	case 0xA4:
+		n = reg.H & reg.A;
+		mmu.setRegisters8Bit(&reg, "A", n);
+
+		if (n == 0) {
+			flags.Z = true;
+		}
+		else {
+			flags.Z = false;
+		}
+		addCycles(4);
+		pc++;
+		break;
+	case 0xA5:
+		n = reg.L & reg.A;
+		mmu.setRegisters8Bit(&reg, "A", n);
+
+		if (n == 0) {
+			flags.Z = true;
+		}
+		else {
+			flags.Z = false;
+		}
+		addCycles(4);
+		pc++;
+		break;
+	case 0xA6:
+		n = mmu.read8(reg.HL) & reg.A;
+		mmu.setRegisters8Bit(&reg, "A", n);
+
+		if (n == 0) {
+			flags.Z = true;
+		}
+		else {
+			flags.Z = false;
+		}
+		addCycles(8);
+		pc++;
+		break;
+
+	case 0xE6:
+		n = mmu.read8(pc+1) & reg.A;
+		mmu.setRegisters8Bit(&reg, "A", n);
+
+		if (n == 0) {
+			flags.Z = true;
+		}
+		else {
+			flags.Z = false;
+		}
+		addCycles(8);
+		pc+=2;
+		break;
+	default:
+		break;
+	}
+
+	flags.C = false;
+	flags.H = true;
+	flags.N = false;
 }
 
 void CPU::LD_NN_N(uint16_t opcode) {
@@ -566,28 +1089,28 @@ void CPU::LD_A_N(uint16_t opcode) {
 	{
 	
 	case 0x0A:
-		std::cout << "LD A, (BC)" << endl;
+		//std::cout << "LD A, (BC)" << endl;
 		//reg.A = mmu.read8(reg.BC);
 		mmu.setRegisters8Bit(&reg, "A", mmu.read8(reg.BC));
 		pc+=1;
 		addCycles(8);
 		break;
 	case 0x1A:
-		std::cout << "LD A, (DE)" << endl;
+		//std::cout << "LD A, (DE)" << endl;
 		//reg.A = mmu.read8(reg.DE);
 		mmu.setRegisters8Bit(&reg, "A", mmu.read8(reg.DE));
 		pc+=1;
 		addCycles(8);
 		break;
 	case 0xFA:
-		std::cout << "LD A, (" << hex << static_cast<unsigned>(nn) << "h)" << endl;
+		//std::cout << "LD A, (" << hex << static_cast<unsigned>(nn) << "h)" << endl;
 		//reg.A = mmu.read8(nn);
 		mmu.setRegisters8Bit(&reg, "A", mmu.read(nn));
 		pc += 3;
 		addCycles(16);
 		break;
 	case 0x3E:
-		std::cout << "LD A, " << hex << static_cast<unsigned>(n) << "h)" << endl;
+		//std::cout << "LD A, " << hex << static_cast<unsigned>(n) << "h)" << endl;
 		//reg.A = mmu.read8(n);
 		mmu.setRegisters8Bit(&reg, "A", mmu.read(n));
 		pc+=2;
@@ -603,67 +1126,67 @@ void CPU::LD_N_A(uint16_t opcode) {
 	switch (opcode)
 	{
 	case 0x47:
-		cout << "LD B, A" << endl;
+		//cout << "LD B, A" << endl;
 		//reg.B = reg.A;
 		mmu.setRegisters8Bit(&reg, "B", reg.A);
 		pc += 1;
 		addCycles(4);
 		break;
 	case 0x4F:
-		cout << "LD C, A" << endl;
+		//cout << "LD C, A" << endl;
 		//reg.C = reg.A;
 		mmu.setRegisters8Bit(&reg, "C", reg.A);
 		pc += 1;
 		addCycles(4);
 		break;
 	case 0x57:
-		cout << "LD D, A" << endl;
+		//cout << "LD D, A" << endl;
 		mmu.setRegisters8Bit(&reg, "D", reg.A);
 		//reg.D = reg.A;
 		pc += 1;
 		addCycles(4);
 		break;
 	case 0x5F:
-		cout << "LD E, A" << endl;
+		//cout << "LD E, A" << endl;
 		mmu.setRegisters8Bit(&reg, "E", reg.A);
 		//reg.E = reg.A;
 		pc += 1;
 		addCycles(4);
 		break;
 	case 0x67:
-		cout << "LD H, A" << endl;
+		//cout << "LD H, A" << endl;
 		mmu.setRegisters8Bit(&reg, "H", reg.A);
 		//reg.H = reg.A;
 		pc += 1;
 		addCycles(4);
 		break;
 	case 0x6F:
-		cout << "LD L, A" << endl;
+		//cout << "LD L, A" << endl;
 		mmu.setRegisters8Bit(&reg, "L", reg.A);
 		//reg.L = reg.A;
 		pc += 1;
 		addCycles(4);
 		break;
 	case 0x02:
-		cout << "LD (BC), A" << endl;
+		//cout << "LD (BC), A" << endl;
 		mmu.write8(mmu.read(reg.BC), reg.A);
 		pc += 1;
 		addCycles(4);
 		break;
 	case 0x12:
-		cout << "LD (DE), A" << endl;
+		//cout << "LD (DE), A" << endl;
 		mmu.write8(mmu.read(reg.DE), reg.A);
 		pc += 1;
 		addCycles(4);
 		break;
 	case 0x77:
-		cout << "LD (HL), A" << endl;
+		//cout << "LD (HL), A" << endl;
 		mmu.write8(mmu.read(reg.HL), reg.A);
 		pc += 1;
 		addCycles(4);
 		break;
 	case 0xEA:
-		cout << "LD (" << hex << static_cast<unsigned>(nn) << "h), A" << endl;
+		//cout << "LD (" << hex << static_cast<unsigned>(nn) << "h), A" << endl;
 		//reg.B = reg.A;
 		mmu.write8(mmu.read(nn), reg.A);
 		pc += 3; 
@@ -681,28 +1204,28 @@ void CPU::LD_N_NN(uint16_t opcode) {
 	{
 	case 0x01:
 		//reg.BC = nn;
-		cout << "LD BC, " << hex << nn << endl;
+		//cout << "LD BC, " << hex << nn << endl;
 		mmu.setRegisters16Bit(&reg, "BC", nn);
 		pc += 3;
 		addCycles(12);
 		break;
 	case 0x11:
 		//reg.DE = nn;
-		cout << "LD DE, " << hex << nn << endl;
+		//cout << "LD DE, " << hex << nn << endl;
 		mmu.setRegisters16Bit(&reg, "DE", nn);
 		pc += 3;
 		addCycles(12);
 		break;
 	case 0x21:
 		//reg.HL = nn;
-		cout << "LD HL, " << hex << nn << endl;
+		//cout << "LD HL, " << hex << nn << endl;
 		mmu.setRegisters16Bit(&reg, "HL", nn);
 		pc += 3;
 		addCycles(12);
 		break;
 	case 0x31:
 		mmu.sp = nn;
-		cout << "LD SP, " << hex << nn << endl;
+		//cout << "LD SP, " << hex << nn << endl;
 		pc += 3;
 		addCycles(12);
 		break;
@@ -711,33 +1234,38 @@ void CPU::LD_N_NN(uint16_t opcode) {
 
 void CPU::NOP() {
 	pc++;
-	cout << "NOP" << endl;
+	//cout << "NOP" << endl;
 	addCycles(4);
 }
 
 void CPU::JP_NN(uint16_t opcode) {
 	pc = mmu.read(pc+1);
-	cout << "JP, " << hex << pc << "h" << endl;
+	//cout << "JP, " << hex << pc << "h" << endl;
 	addCycles(12);
+}
+
+void CPU::JP_regHL() {
+	pc = reg.HL;
+	addCycles(4);
 }
 
 void CPU::DI() {
 	IME = false;
-	cout << "DI" << endl;
+	//cout << "DI" << endl;
 	addCycles(4);
 	pc++;
 }
 
 void CPU::EI() {
 	IME = true;
-	cout << "EI" << endl;
+	//cout << "EI" << endl;
 	addCycles(4);
 	pc++;
 }
 
 void CPU::CALL_NN(uint16_t opcode) {
 	uint16_t nn = mmu.read(pc+1);
-	cout << "CALL, " << static_cast<unsigned>(nn) << "h" << endl;
+	//cout << "CALL, " << static_cast<unsigned>(nn) << "h" << endl;
 	mmu.push(pc+3);
 	pc = nn;
 	addCycles(12);
@@ -752,8 +1280,9 @@ void CPU::LDH_N_A() {
 }
 
 void CPU::LDH_A_N() {
+
 	uint8_t n = mmu.read8(pc + 1);
-	uint16_t memoryAdress = 0xFF0 + n;
+	uint16_t memoryAdress = 0xFF00 + n;
 	mmu.setRegisters8Bit(&reg, "A", mmu.read8(memoryAdress));
 	addCycles(12);
 	pc += 2;
@@ -791,7 +1320,7 @@ void CPU::CP_N(uint16_t opcode) {
 
 		pc += 2;
 		addCycles(8);
-		cout << "CP, A " << hex << static_cast<unsigned>(n) << "h" << endl;
+		//cout << "CP, A " << hex << static_cast<unsigned>(n) << "h" << endl;
 		break;
 	case 0xBF:
 		n = reg.A;
@@ -819,7 +1348,7 @@ void CPU::CP_N(uint16_t opcode) {
 		}
 		pc += 1;
 		addCycles(4);
-		cout << "CP, A " << hex << static_cast<unsigned>(n) << "h" << endl;
+		//cout << "CP, A " << hex << static_cast<unsigned>(n) << "h" << endl;
 		break;
 	case 0xB8:
 		n = reg.B;
@@ -847,7 +1376,7 @@ void CPU::CP_N(uint16_t opcode) {
 		}
 		pc += 1;
 		addCycles(4);
-		cout << "CP, A " << hex << static_cast<unsigned>(n) << "h" << endl;
+		//cout << "CP, A " << hex << static_cast<unsigned>(n) << "h" << endl;
 		break;
 	case 0xB9:
 		n = reg.C;
@@ -875,7 +1404,7 @@ void CPU::CP_N(uint16_t opcode) {
 		}
 		pc += 1;
 		addCycles(4);
-		cout << "CP, A " << hex << static_cast<unsigned>(n) << "h" << endl;
+		//cout << "CP, A " << hex << static_cast<unsigned>(n) << "h" << endl;
 		break;
 	case 0xBA:
 		n = reg.D;
@@ -903,7 +1432,7 @@ void CPU::CP_N(uint16_t opcode) {
 		}
 		pc += 1;
 		addCycles(4);
-		cout << "CP, A " << hex << static_cast<unsigned>(n) << "h" << endl;
+		//cout << "CP, A " << hex << static_cast<unsigned>(n) << "h" << endl;
 		break;
 	case 0xBB:
 		n = reg.E;
@@ -931,7 +1460,7 @@ void CPU::CP_N(uint16_t opcode) {
 		}
 		pc += 1;
 		addCycles(4);
-		cout << "CP, A " << hex << static_cast<unsigned>(n) << "h" << endl;
+		//cout << "CP, A " << hex << static_cast<unsigned>(n) << "h" << endl;
 		break;
 	case 0xBC:
 		n = reg.H;
@@ -959,7 +1488,7 @@ void CPU::CP_N(uint16_t opcode) {
 		}
 		pc += 1;
 		addCycles(4);
-		cout << "CP, A " << hex << static_cast<unsigned>(n) << "h" << endl;
+		//cout << "CP, A " << hex << static_cast<unsigned>(n) << "h" << endl;
 		break;
 	case 0xBD:
 		n = reg.L;
@@ -987,7 +1516,7 @@ void CPU::CP_N(uint16_t opcode) {
 		}
 		pc += 1;
 		addCycles(4);
-		cout << "CP, A " << hex << static_cast<unsigned>(n) << "h" << endl;
+		//cout << "CP, A " << hex << static_cast<unsigned>(n) << "h" << endl;
 		break;
 	case 0xBE:
 		nn = mmu.read(reg.HL);
@@ -1015,7 +1544,7 @@ void CPU::CP_N(uint16_t opcode) {
 		}
 		pc += 1;
 		addCycles(8);
-		cout << "CP, A " << hex << static_cast<unsigned>(nn) << "h" << endl;
+		//cout << "CP, A " << hex << static_cast<unsigned>(nn) << "h" << endl;
 		break;
 	default:
 		pc+=2;
@@ -1027,44 +1556,46 @@ void CPU::JR_CC_N(uint16_t opcode) {
 	uint8_t n = mmu.read8(pc+1);
 	switch (opcode) {
 		//JR NZ, N
-	case 0x20: {
-			if (!flags.Z) {
-				pc = (pc - (0xff - n)) - 1;
-			}
+	case 0x20:
+		//std::cout << "Flag Z when calling JR NZ " << flags.Z << std::endl;
 			pc += 2;
-			cout << "JR NZ, " << hex << pc << endl;
+			if (!flags.Z) {
+				pc = pc - (0xff - n) - 1;
+				//std::cout << "PC: " << pc << endl;
+			}
+			//cout << "JR NZ, " << hex << pc << endl;
 			addCycles(8);
-		}
+		
 		break;
 		//JR Z, N
-	case 0x28: {
+	case 0x28: 
+			pc += 2;
 			if (flags.Z) {
 				pc = pc - (0xff - n) - 1;
 			}
-			pc += 2;
 			addCycles(8);
-			cout << "JR Z, " << hex << pc << endl;
-		}
+			//cout << "JR Z, " << hex << pc << endl;
+		
 		break;
 		//JR NC, N
-	case 0x30: {
+	case 0x30: 
+			pc += 2;
 			if (!flags.C) {
 				pc = pc - (0xff - n) - 1;
 			}
-			pc += 2;
 			addCycles(8);
-			cout << "JR NC, " << hex << pc << endl;
-		}
+			//cout << "JR NC, " << hex << pc << endl;
+		
 		break;
 		//JR C, N
-	case 0x38: {
+	case 0x38: 
+			pc += 2;
 			if (flags.C) {
 				pc = pc - (0xff - n) - 1;
 			}
-			pc += 2;
 			addCycles(8);
-			cout << "JR C, " << hex << pc << endl;
-		}
+			//cout << "JR C, " << hex << pc << endl;
+		
 		break;
 
 	}
@@ -1074,8 +1605,8 @@ void CPU::INC_N(uint16_t opcode) {
 	switch (opcode)
 	{
 		case 0x3C:
-			std::cout << "INC A" << endl;
-			reg.A++;
+			//std::cout << "INC A" << endl;
+			mmu.setRegisters8Bit(&reg, "A", reg.A + 1);
 			if (reg.A == 0) {
 				flags.Z = true;
 			}
@@ -1087,8 +1618,8 @@ void CPU::INC_N(uint16_t opcode) {
 			pc++;
 			break;
 		case 0x04:
-			std::cout << "INC B" << endl;
-			reg.B++;
+			//std::cout << "INC B" << endl;
+			mmu.setRegisters8Bit(&reg, "B", reg.B + 1);
 			if (reg.B == 0) {
 				flags.Z = true;
 			}
@@ -1100,8 +1631,8 @@ void CPU::INC_N(uint16_t opcode) {
 			pc++;
 			break;
 		case 0x0C:
-			std::cout << "INC C" << endl;
-			reg.C++; 
+			//std::cout << "INC C" << endl;
+			mmu.setRegisters8Bit(&reg, "C", reg.C + 1);
 			if (reg.C == 0) {
 				flags.Z = true;
 			}
@@ -1113,8 +1644,8 @@ void CPU::INC_N(uint16_t opcode) {
 			pc++;
 			break;
 		case 0x14:
-			std::cout << "INC D" << endl;
-			reg.D++;
+			//std::cout << "INC D" << endl;
+			mmu.setRegisters8Bit(&reg, "D", reg.D + 1);
 			if (reg.D == 0) {
 				flags.Z = true;
 			}
@@ -1126,8 +1657,8 @@ void CPU::INC_N(uint16_t opcode) {
 			pc++;
 			break;
 		case 0x1C:
-			std::cout << "INC E" << endl;
-			reg.E++;
+			//std::cout << "INC E" << endl;
+			mmu.setRegisters8Bit(&reg, "E", reg.E + 1);
 			if (reg.E == 0) {
 				flags.Z = true;
 			}
@@ -1139,8 +1670,8 @@ void CPU::INC_N(uint16_t opcode) {
 			pc++;
 			break;
 		case 0x24:
-			std::cout << "INC H" << endl;
-			reg.H++;
+			//std::cout << "INC H" << endl;
+			mmu.setRegisters8Bit(&reg, "H", reg.H + 1);
 			if (reg.H == 0) {
 				flags.Z = true;
 			}
@@ -1152,8 +1683,8 @@ void CPU::INC_N(uint16_t opcode) {
 			pc++;
 			break;
 		case 0x2C:
-			std::cout << "INC L" << endl;
-			reg.L++;
+			//std::cout << "INC L" << endl;
+			mmu.setRegisters8Bit(&reg, "L", reg.L + 1);
 			if (reg.L == 0) {
 				flags.Z = true;
 			}
@@ -1165,7 +1696,7 @@ void CPU::INC_N(uint16_t opcode) {
 			pc++;
 			break;
 		case 0x34:
-			std::cout << "INC (HL)" << endl;
+			//std::cout << "INC (HL)" << endl;
 			mmu.write8(reg.HL, mmu.read8(reg.HL) + 1);
 			if (mmu.read8(reg.HL) == 0) {
 				flags.Z = true;
@@ -1187,105 +1718,147 @@ void CPU::DEC_N(uint16_t opcode) {
 	switch (opcode)
 	{
 	case 0x3D:
-		std::cout << "DEC A" << endl;
-		reg.A--;
+		//std::cout << "DEC A" << endl;
+		mmu.setRegisters8Bit(&reg, "A", reg.A - 1);
 		if (reg.A == 0) {
 			flags.Z = true;
+		}else {
+			flags.Z = false;
 		}
 
 		if (isHalfCarry(reg.A, 1, "SUB")) {
 			flags.H = true;
 		}
+		else {
+			flags.H = false;
+		}
 		addCycles(4);
 		pc++;
 		break;
 	case 0x05:
-		std::cout << "DEC B" << endl;
-		reg.B--;
+		//std::cout << "DEC B" << endl;
+		mmu.setRegisters8Bit(&reg, "B", reg.B - 1);
 		if (reg.B == 0) {
 			flags.Z = true;
+		}
+		else {
+			flags.Z = false;
 		}
 
 		if (isHalfCarry(reg.B, 1, "SUB")) {
 			flags.H = true;
 		}
+		else {
+			flags.H = false;
+		}
 		addCycles(4);
 		pc++;
 		break;
 	case 0x0D:
-		std::cout << "DEC C" << endl;
-		reg.C--;
+		//std::cout << "DEC C" << endl;
+		mmu.setRegisters8Bit(&reg, "C", reg.C - 1);
 		if (reg.C == 0) {
 			flags.Z = true;
+		}else {
+			flags.Z = false;
 		}
 
 		if (isHalfCarry(reg.C, 1, "SUB")) {
 			flags.H = true;
 		}
+		else {
+			flags.H = false;
+		}
 		addCycles(4);
 		pc++;
 		break;
 	case 0x15:
-		std::cout << "DEC D" << endl;
-		reg.D--;
+		//std::cout << "DEC D" << endl;
+		mmu.setRegisters8Bit(&reg, "D", reg.D - 1);
 		if (reg.D == 0) {
 			flags.Z = true;
+		}else {
+			flags.Z = false;
 		}
 
 		if (isHalfCarry(reg.D, 1, "SUB")) {
 			flags.H = true;
 		}
+		else {
+			flags.H = false;
+		}
 		addCycles(4);
 		pc++;
 		break;
 	case 0x1D:
-		std::cout << "DEC E" << endl;
-		reg.E--;
+		//std::cout << "DEC E" << endl;
+		mmu.setRegisters8Bit(&reg, "E", reg.E - 1);
 		if (reg.E == 0) {
 			flags.Z = true;
+		}else {
+			flags.Z = false;
 		}
 
 		if (isHalfCarry(reg.E, 1, "SUB")) {
 			flags.H = true;
 		}
+		else {
+			flags.H = false;
+		}
 		addCycles(4);
 		pc++;
 		break;
 	case 0x25:
-		std::cout << "DEC H" << endl;
-		reg.H--;
+		//std::cout << "DEC H" << endl;
+		mmu.setRegisters8Bit(&reg, "H", reg.H - 1);
 		if (reg.H == 0) {
 			flags.Z = true;
+		}else {
+			flags.Z = false;
 		}
 
 		if (isHalfCarry(reg.H, 1, "SUB")) {
 			flags.H = true;
 		}
+		else {
+			flags.H = false;
+		}
 		addCycles(4);
 		pc++;
 		break;
 	case 0x2D:
-		std::cout << "DEC L" << endl;
-		reg.L--;
+		//std::cout << "DEC L" << endl;
+		mmu.setRegisters8Bit(&reg, "L", reg.L - 1);
 		if (reg.L == 0) {
 			flags.Z = true;
+		}else {
+			flags.Z = false;
 		}
 
 		if (isHalfCarry(reg.L, 1, "SUB")) {
 			flags.H = true;
 		}
+		else {
+			flags.H = false;
+		}
 		addCycles(4);
 		pc++;
 		break;
 	case 0x35:
-		std::cout << "DEC (HL)" << endl;
+		//std::cout << "DEC (HL)" << endl;
 		mmu.write8(reg.HL, mmu.read8(reg.HL) - 1);
 		if (mmu.read8(reg.HL) == 0) {
 			flags.Z = true;
 		}
+		else {
+			flags.Z = false;
+		}
 
 		if (isHalfCarry(mmu.read8(reg.HL), 1, "SUB")) {
 			flags.H = true;
+		}
+		else {
+			flags.H = false;
 		}
 		addCycles(12);
 		pc++;
@@ -1297,7 +1870,7 @@ void CPU::DEC_N(uint16_t opcode) {
 }
 
 void CPU::LDI_regHL_A() {
-	std::cout << "LDI (HL), A" << endl;
+	//std::cout << "LDI (HL), A" << endl;
 	mmu.write8(mmu.read(reg.HL), reg.A);
 	reg.HL++;
 	addCycles(8);
@@ -1305,11 +1878,723 @@ void CPU::LDI_regHL_A() {
 }
 
 void CPU::LDI_A_regHL() {
-	std::cout << "LDI A, (HL)" << endl;
+	//std::cout << "LDI A, (HL)" << endl;
 	reg.A = mmu.read8(reg.HL);
 	reg.HL++;
 	addCycles(8);
 	pc++;
+}
+
+void CPU::RST_N(uint16_t opcode) {
+	switch (opcode)
+	{
+		case 0xC7:
+			mmu.push(pc);
+			pc = 0x0000 + 0x0000;
+			addCycles(32);
+			break;
+		case 0xCF:
+			mmu.push(pc);
+			pc = 0x0000 + 0x0008;
+			addCycles(32);
+			break;
+		case 0xD7:
+			mmu.push(pc);
+			pc = 0x0000 + 0x0010;
+			addCycles(32);
+			break;
+		case 0xDF:
+			mmu.push(pc);
+			pc = 0x0000 + 0x0018;
+			addCycles(32);
+			break;
+		case 0xE7:
+			mmu.push(pc);
+			pc = 0x0000 + 0x0020;
+			addCycles(32);
+			break;
+		case 0xEF:
+			mmu.push(pc);
+			pc = 0x0000 + 0x0028;
+			addCycles(32);
+			break;
+		case 0xF7:
+			mmu.push(pc);
+			pc = 0x0000 + 0x0030;
+			addCycles(32);
+			break;
+		case 0xFF:
+			mmu.push(pc);
+			pc = 0x0000 + 0x0038;
+			addCycles(32);
+			break;
+	default:
+		break;
+	}
+}
+
+void CPU::LD_regC_A() {
+	uint16_t n = 0xFF00 + reg.C;
+	mmu.write8(n, reg.A);
+	pc++;
+	addCycles(8);
+}
+
+void CPU::DEC_NN(uint16_t opcode) {
+	switch (opcode)
+	{
+		case 0x0B:
+			mmu.setRegisters16Bit(&reg, "BC", reg.BC - 1);
+			pc++;
+			addCycles(8);
+			break;
+		case 0x1B:
+			mmu.setRegisters16Bit(&reg, "DE", reg.DE - 1);
+			pc++;
+			addCycles(8);
+			break;
+		case 0x2B:
+			mmu.setRegisters16Bit(&reg, "HL", reg.HL - 1);
+			pc++;
+			addCycles(8);
+			break;
+		case 0x3B:
+			mmu.sp--;
+			pc++;
+			addCycles(8);
+			break;
+	default:
+		break;
+	}
+}
+
+void CPU::CPL() {
+	uint8_t registerA = 0x00;
+	std::bitset<8> bitToFlip(registerA);
+	uint8_t regAFlipped = (uint8_t)bitToFlip.flip().to_ulong();
+	mmu.setRegisters8Bit(&reg, "A", regAFlipped);	
+	addCycles(4);
+	flags.N = true;
+	flags.H = true;
+	pc++;
+}
+
+void CPU::CB_SWAP_N(uint16_t opcode) {
+	uint8_t swappedNibles;
+	switch (opcode)
+	{
+		case 0x37:
+			swappedNibles = swapNibbles(reg.A);
+			mmu.setRegisters8Bit(&reg, "A", swappedNibles);
+			if (swappedNibles == 0) {
+				flags.N = true;
+			}
+			else {
+				flags.Z = false;
+			}
+			addCycles(8);
+			pc+=2;
+			break;
+		case 0x30:
+			swappedNibles = swapNibbles(reg.B);
+			mmu.setRegisters8Bit(&reg, "B", swappedNibles);
+			if (swappedNibles == 0) {
+				flags.N = true;
+			}
+			else {
+				flags.Z = false;
+			}
+			addCycles(8);
+			pc += 2;
+			break;
+		case 0x31:
+			swappedNibles = swapNibbles(reg.C);
+			mmu.setRegisters8Bit(&reg, "C", swappedNibles);
+			if (swappedNibles == 0) {
+				flags.N = true;
+			}
+			else {
+				flags.Z = false;
+			}
+			addCycles(8);
+			pc += 2;
+			break;
+		case 0x32:
+			swappedNibles = swapNibbles(reg.D);
+			mmu.setRegisters8Bit(&reg, "D", swappedNibles);
+			if (swappedNibles == 0) {
+				flags.N = true;
+			}
+			else {
+				flags.Z = false;
+			}
+			addCycles(8);
+			pc += 2;
+			break;
+		case 0x33:
+			swappedNibles = swapNibbles(reg.E);
+			mmu.setRegisters8Bit(&reg, "E", swappedNibles);
+			if (swappedNibles == 0) {
+				flags.N = true;
+			}
+			else {
+				flags.Z = false;
+			}
+			addCycles(8);
+			pc += 2;
+			break;
+		case 0x34:
+			swappedNibles = swapNibbles(reg.H);
+			mmu.setRegisters8Bit(&reg, "H", swappedNibles);
+			if (swappedNibles == 0) {
+				flags.N = true;
+			}
+			else {
+				flags.Z = false;
+			}
+			addCycles(8);
+			pc += 2;
+			break;
+		case 0x35:
+			swappedNibles = swapNibbles(reg.L);
+			mmu.setRegisters8Bit(&reg, "L", swappedNibles);
+			if (swappedNibles == 0) {
+				flags.N = true;
+			}
+			else {
+				flags.Z = false;
+			}
+			addCycles(8);
+			pc += 2;
+			break;
+		case 0x36:
+			swappedNibles = swapNibbles(mmu.read8(reg.HL));
+			mmu.write8(reg.HL, swappedNibles);
+			if (swappedNibles == 0) {
+				flags.N = true;
+			}
+			else {
+				flags.Z = false;
+			}
+			addCycles(16);
+			pc += 2;
+			break;
+	default:
+		break;
+	}
+
+	flags.N = false;
+	flags.H = false;
+	flags.C = false;
+}
+
+void CPU::ADD_A_N(uint16_t opcode){
+	uint8_t n;
+	switch (opcode)
+	{
+		case 0x80:
+			mmu.setRegisters8Bit(&reg, "A", reg.A + reg.B);
+			if (reg.A == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+
+			flags.C = isCarry8bit(reg.A);
+			flags.N = false;
+			flags.H = isHalfCarry(reg.A, reg.B, "ADD");
+			addCycles(4);
+			pc++;
+			break;
+		case 0x81:
+			mmu.setRegisters8Bit(&reg, "A", reg.A + reg.C);
+			if (reg.A == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+
+			flags.C = isCarry8bit(reg.A);
+			flags.N = false;
+			flags.H = isHalfCarry(reg.A, reg.C, "ADD");
+			addCycles(4);
+			pc++;
+			break;
+		case 0x82:
+			mmu.setRegisters8Bit(&reg, "A", reg.A + reg.D);
+			if (reg.A == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+
+			flags.C = isCarry8bit(reg.A);
+			flags.N = false;
+			flags.H = isHalfCarry(reg.A, reg.D, "ADD");
+			addCycles(4);
+			pc++;
+			break;
+		case 0x83:
+			mmu.setRegisters8Bit(&reg, "A", reg.A + reg.E);
+			if (reg.A == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+
+			flags.C = isCarry8bit(reg.A);
+			flags.N = false;
+			flags.H = isHalfCarry(reg.A, reg.E, "ADD");
+			addCycles(4);
+			pc++;
+			break;
+		case 0x84:
+			mmu.setRegisters8Bit(&reg, "A", reg.A + reg.H);
+			if (reg.A == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+
+			flags.C = isCarry8bit(reg.A);
+			flags.N = false;
+			flags.H = isHalfCarry(reg.A, reg.H, "ADD");
+			addCycles(4);
+			pc++;
+			break;
+		case 0x85:
+			mmu.setRegisters8Bit(&reg, "A", reg.A + reg.L);
+			if (reg.A == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+
+			flags.C = isCarry8bit(reg.A);
+			flags.N = false;
+			flags.H = isHalfCarry(reg.A, reg.L, "ADD");
+			addCycles(4);
+			pc++;
+			break;
+		case 0x86:
+			mmu.setRegisters8Bit(&reg, "A", reg.A + mmu.read8(reg.HL));
+			if (reg.A == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+
+			flags.C = isCarry8bit(reg.A);
+			flags.N = false;
+			flags.H = isHalfCarry(reg.A, mmu.read8(reg.HL), "ADD");
+			addCycles(8);
+			pc++;
+			break;
+		case 0x87:
+			mmu.setRegisters8Bit(&reg, "A", reg.A + reg.A);
+			if (reg.A == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+
+			flags.C = isCarry8bit(reg.A);
+			flags.N = false;
+			flags.H = isHalfCarry(reg.A, reg.A, "ADD");
+			addCycles(4);
+			pc++;
+			break;
+		case 0xC6:
+			n = mmu.read8(pc + 1);
+			mmu.setRegisters8Bit(&reg, "A", reg.A + n);
+			if (reg.A == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+
+			flags.C = isCarry8bit(reg.A);
+			flags.N = false;
+			flags.H = isHalfCarry(reg.A, n, "ADD");
+			addCycles(8);
+			pc+=2;
+			break;
+	default:
+		break;
+	}
+}
+
+void CPU::ADC_A_N(uint16_t opcode) {
+	uint8_t n;
+	switch (opcode)
+	{
+		case 0x88:
+			n = reg.A + reg.B;
+			if (isCarry8bit(n)) {
+				mmu.setRegisters8Bit(&reg, "A", n + 1);
+				flags.H = isHalfCarry(reg.A, reg.B + 1, "ADD");
+			}
+			else {
+				mmu.setRegisters8Bit(&reg, "A", n + 0);
+				flags.H = isHalfCarry(reg.A, reg.B, "ADD");
+			}
+			if (reg.A == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+
+			flags.C = isCarry8bit(reg.A);
+			flags.N = false;
+			addCycles(4);
+			pc++;
+			break;
+		case 0x89:
+			n = reg.A + reg.C;
+			if (isCarry8bit(n)) {
+				mmu.setRegisters8Bit(&reg, "A", n + 1);
+				flags.H = isHalfCarry(reg.A, reg.C + 1, "ADD");
+			}
+			else {
+				mmu.setRegisters8Bit(&reg, "A", n + 0);
+				flags.H = isHalfCarry(reg.A, reg.C, "ADD");
+			}
+			if (reg.A == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+
+			flags.C = isCarry8bit(reg.A);
+			flags.N = false;
+			addCycles(4);
+			pc++;
+			break;
+		case 0x8A:
+			n = reg.A + reg.D;
+			if (isCarry8bit(n)) {
+				mmu.setRegisters8Bit(&reg, "A", n + 1);
+				flags.H = isHalfCarry(reg.A, reg.D + 1, "ADD");
+			}
+			else {
+				mmu.setRegisters8Bit(&reg, "A", n + 0);
+				flags.H = isHalfCarry(reg.A, reg.D, "ADD");
+			}
+			if (reg.A == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+
+			flags.C = isCarry8bit(reg.A);
+			flags.N = false;
+			addCycles(4);
+			pc++;
+			break;
+		case 0x8B:
+			n = reg.A + reg.E;
+			if (isCarry8bit(n)) {
+				mmu.setRegisters8Bit(&reg, "A", n + 1);
+				flags.H = isHalfCarry(reg.A, reg.E + 1, "ADD");
+			}
+			else {
+				mmu.setRegisters8Bit(&reg, "A", n + 0);
+				flags.H = isHalfCarry(reg.A, reg.E, "ADD");
+			}
+			if (reg.A == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+
+			flags.C = isCarry8bit(reg.A);
+			flags.N = false;
+			addCycles(4);
+			pc++;
+			break;
+		case 0x8C:
+			n = reg.A + reg.H;
+			if (isCarry8bit(n)) {
+				mmu.setRegisters8Bit(&reg, "A", n + 1);
+				flags.H = isHalfCarry(reg.A, reg.H + 1, "ADD");
+			}
+			else {
+				mmu.setRegisters8Bit(&reg, "A", n + 0);
+				flags.H = isHalfCarry(reg.A, reg.H, "ADD");
+			}
+			if (reg.A == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+
+			flags.C = isCarry8bit(reg.A);
+			flags.N = false;
+			addCycles(4);
+			pc++;
+			break;
+		case 0x8D:
+			n = reg.A + reg.L;
+			if (isCarry8bit(n)) {
+				mmu.setRegisters8Bit(&reg, "A", n + 1);
+				flags.H = isHalfCarry(reg.A, reg.L + 1, "ADD");
+			}
+			else {
+				mmu.setRegisters8Bit(&reg, "A", n + 0);
+				flags.H = isHalfCarry(reg.A, reg.L, "ADD");
+			}
+			if (reg.A == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+
+			flags.C = isCarry8bit(reg.A);
+			flags.N = false;
+			addCycles(4);
+			pc++;
+			break;
+		case 0x8E:
+			n = reg.A + mmu.read8(reg.HL);
+			if (isCarry8bit(n)) {
+				mmu.setRegisters8Bit(&reg, "A", n + 1);
+				flags.H = isHalfCarry(reg.A, mmu.read8(reg.HL) + 1, "ADD");
+			}
+			else {
+				mmu.setRegisters8Bit(&reg, "A", n + 0);
+				flags.H = isHalfCarry(reg.A, mmu.read8(reg.HL), "ADD");
+			}
+			if (reg.A == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+
+			flags.C = isCarry8bit(reg.A);
+			flags.N = false;
+			addCycles(4);
+			pc++;
+			break;
+		case 0x8F:
+			n = reg.A + reg.A;
+			if (isCarry8bit(n)) {
+				mmu.setRegisters8Bit(&reg, "A", n + 1);
+				flags.H = isHalfCarry(reg.A, reg.A + 1, "ADD");
+			}
+			else {
+				mmu.setRegisters8Bit(&reg, "A", n + 0);
+				flags.H = isHalfCarry(reg.A, reg.A, "ADD");
+			}
+			if (reg.A == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+
+			flags.C = isCarry8bit(reg.A);
+			flags.N = false;
+			addCycles(8);
+			pc++;
+			break;
+		case 0xCE:
+			n = reg.A + mmu.read8(pc+1);
+			if (isCarry8bit(n)) {
+				mmu.setRegisters8Bit(&reg, "A", n + 1);
+				flags.H = isHalfCarry(reg.A, mmu.read8(pc + 1) + 1, "ADD");
+			}
+			else {
+				mmu.setRegisters8Bit(&reg, "A", n + 0);
+				flags.H = isHalfCarry(reg.A, mmu.read8(pc + 1), "ADD");
+			}
+			if (reg.A == 0) {
+				flags.Z = true;
+			}
+			else {
+				flags.Z = false;
+			}
+
+			flags.C = isCarry8bit(reg.A);
+			flags.N = false;
+			addCycles(8);
+			pc+=2;
+			break;
+	default:
+		break;
+	}
+}
+
+void CPU::POP_NN(uint16_t opcode) {
+	uint16_t nn;
+	switch (opcode)
+	{
+		case 0xF1:
+			mmu.pop(&nn);
+			mmu.setRegisters16Bit(&reg, "AF", nn);
+			pc++;
+			addCycles(12);
+			break;
+		case 0xC1:
+			mmu.pop(&nn);
+			mmu.setRegisters16Bit(&reg, "BC", nn);
+			pc++;
+			addCycles(12);
+			break;
+		case 0xD1:
+			mmu.pop(&nn);
+			mmu.setRegisters16Bit(&reg, "DE", nn);
+			pc++;
+			addCycles(12);
+			break;
+		case 0xE1:
+			mmu.pop(&nn);
+			mmu.setRegisters16Bit(&reg, "HL", nn);
+			pc++;
+			addCycles(12);
+			break;
+	default:
+		break;
+	}
+}
+
+void CPU::PUSH_NN(uint16_t opcode) {
+	uint16_t nn;
+	switch (opcode)
+	{
+	case 0xF5:
+		mmu.push(reg.AF);
+		pc++;
+		addCycles(16);
+		break;
+	case 0xC5:
+		mmu.push(reg.BC);
+		pc++;
+		addCycles(16);
+		break;
+	case 0xD5:
+		mmu.push(reg.DE);
+		pc++;
+		addCycles(16);
+		break;
+	case 0xE5:
+		mmu.push(reg.HL);
+		pc++;
+		addCycles(16);
+		break;
+	default:
+		break;
+	}
+}
+
+void CPU::LD_SP_HL() {
+	mmu.setRegisters16Bit(&reg, "HL", mmu.sp);
+	pc++;
+	addCycles(8);
+}
+
+void CPU::LD_NN_SP() {
+	uint16_t nn = mmu.read(pc + 1);
+	mmu.write(nn, mmu.sp);
+	pc += 3;
+	addCycles(20);
+}
+
+void CPU::ADD_HL_N(uint16_t opcode) {
+	uint16_t nn;
+	switch (opcode)
+	{
+		case 0x09:
+			nn = reg.HL + reg.BC;
+			flags.H = isHalfCarry16Bit(reg.HL, reg.BC, "ADD");
+			mmu.setRegisters16Bit(&reg, "HL", nn);
+			flags.C = isCarry16bit(reg.HL);
+			flags.N = false;
+			addCycles(8);
+			pc++;
+			break;
+		case 0x19:
+			nn = reg.HL + reg.DE;
+			flags.H = isHalfCarry16Bit(reg.HL, reg.DE, "ADD");
+			mmu.setRegisters16Bit(&reg, "HL", nn);
+			flags.C = isCarry16bit(reg.HL);
+			flags.N = false;
+			addCycles(8);
+			pc++;
+			break;
+		case 0x29:
+			nn = reg.HL + reg.HL;
+			flags.H = isHalfCarry16Bit(reg.HL, reg.HL, "ADD");
+			mmu.setRegisters16Bit(&reg, "HL", nn);
+			flags.C = isCarry16bit(reg.HL);
+			flags.N = false;
+			addCycles(8);
+			pc++;
+			break;
+		case 0x39:
+			nn = reg.HL + mmu.sp;
+			flags.H = isHalfCarry16Bit(reg.HL, mmu.sp, "ADD");
+			mmu.setRegisters16Bit(&reg, "HL", nn);
+			flags.C = isCarry16bit(reg.HL);
+			flags.N = false;
+			addCycles(8);
+			pc++;
+			break;
+	default:
+		break;
+	}
+}
+
+void CPU::ADD_SP_N() {
+	uint8_t n = mmu.read8(pc + 1);
+	flags.H = isHalfCarry16Bit(mmu.sp, (uint16_t)n, "ADD");
+	mmu.sp += n;
+	flags.Z = false;
+	flags.N = false;
+	flags.C = isCarry16bit(mmu.sp);
+	pc += 2;
+	addCycles(16);
+}
+
+void CPU::INC_NN(uint16_t opcode) {
+	switch (opcode) {
+		case 0x03:
+			mmu.setRegisters16Bit(&reg, "BC", reg.BC + 1);
+			addCycles(8);
+			pc++;
+			break;
+		case 0x13:
+			mmu.setRegisters16Bit(&reg, "DE", reg.DE + 1);
+			addCycles(8);
+			pc++;
+			break;
+		case 0x23:
+			mmu.setRegisters16Bit(&reg, "HL", reg.HL + 1);
+			addCycles(8);
+			pc++;
+			break;
+		case 0x33:
+			mmu.sp++;
+			addCycles(8);
+			pc++;
+			break;
+	}
+
 }
 
 GameboyFlags *CPU::getFlagState() {

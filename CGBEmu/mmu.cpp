@@ -124,7 +124,8 @@ void MMU::write(uint16_t addr, uint16_t value) {
 
 
 void MMU::write8(uint16_t addr, uint8_t value) {
-	std::cout << "Writing 1 Byte in: " << hex << static_cast<unsigned>(addr) << " and a value of: " << hex << static_cast<unsigned>(value) << std::endl;
+	//std::cout << "Writing 1 Byte in: " << hex << static_cast<unsigned>(addr) << " and a value of: " << hex << static_cast<unsigned>(value) << std::endl;
+	//std::cout << "addr & 0xF000: " << hex << static_cast<unsigned>(addr & 0xF000) << std::endl;
 	switch (addr & 0xf000)
 	{
 	case 0x0000:
@@ -147,6 +148,7 @@ void MMU::write8(uint16_t addr, uint8_t value) {
 		break;
 	case 0xC000:
 	case 0xD000:
+		//std::cout << "Writing WRAM at : " << hex << static_cast<unsigned>(addr) << ", with a value of: " << hex << static_cast<unsigned>(value) << std::endl;
 		wram[addr - 0xC000] = value;
 		break;
 	case 0xE000:
@@ -184,21 +186,16 @@ void MMU::write8(uint16_t addr, uint8_t value) {
 }
 
 void MMU::push(uint16_t value) {
+	//std::cout << "Writing in RAM: " << std::hex << value << " at position: " << std::hex << sp << std::endl;
 	sp--;
-	std::cout << "Stack Pointer: SP -> " << hex << sp << std::endl;
 	write8(sp, value >> 8);
 	sp--;
 	write8(sp, (uint8_t)value);
-	//stack[sp] = (addr >> 8);
-	//stack[sp] = (uint8_t)addr;
 }
 
 void MMU::pop(uint16_t *value) {
-	//TODO: Program pop
-	std::cout << "POP address: " << hex << static_cast<unsigned>((sp)) << " with a value of: " << hex << static_cast<unsigned>(read8(sp)) << std::endl;
-	std::cout << "POP address: " << hex << static_cast<unsigned>((sp+1)) << " with a value of: " << hex << static_cast<unsigned>(read8(sp+1)) << std::endl;
-	*value = (read8(sp+1) << 8 | (read8(sp)));
-	sp++;
+	*value = (read8(sp + 1) << 8 | (read8(sp)));
+	sp+=2;
 }
 
 void MMU::setRegisters16Bit(GameboyRegisters *reg, const char *regName, uint16_t valueToSet) {
