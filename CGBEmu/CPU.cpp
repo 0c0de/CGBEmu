@@ -7,20 +7,14 @@ GameboyRegisters reg;
 GameboyFlags flags;
 
 
+uint8_t registerF = 0x00;
+
 void CPU::init() {
 	pc = 0x100;
-	reg.AF = 0x01B0;
-	reg.A = 0x01;
-	reg.F = 0xB0;
-	reg.BC = 0x0013;
-	reg.B = 0x00;
-	reg.C = 0x13;
-	reg.DE = 0x00D8;
-	reg.D = 0x00;
-	reg.E = 0xD8;
-	reg.HL = 0x014D;
-	reg.H = 0x01;
-	reg.L = 0x4D;
+	mmu.setRegisters16Bit(&reg, "AF", 0x01B0);
+	mmu.setRegisters16Bit(&reg, "BC", 0x0013);
+	mmu.setRegisters16Bit(&reg, "DE", 0x00D8);
+	mmu.setRegisters16Bit(&reg, "HL", 0x014D);
 
 	mmu.sp = 0xE000;
 
@@ -80,7 +74,40 @@ void CPU::runCPU() {
 	while (true)
 	{
 		opcode = mmu.read8(pc);
-		cout << "PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
+
+		//Set the flags 
+		if (flags.Z) {
+			mmu.setRegisters8Bit(&reg, "F", registerF |= (1 << 7));
+		}
+		else {
+			mmu.setRegisters8Bit(&reg, "F", registerF &= ~(1 << 7));
+		}
+
+		if (flags.N) {
+			mmu.setRegisters8Bit(&reg, "F", registerF |= (1 << 6));
+		}
+		else {
+			mmu.setRegisters8Bit(&reg, "F", registerF &= ~(1 << 6));
+		}
+
+		if (flags.H) {
+			mmu.setRegisters8Bit(&reg, "F", registerF |= (1 << 5));
+		}
+		else {
+			mmu.setRegisters8Bit(&reg, "F", registerF &= ~(1 << 5));
+		}
+
+		if (flags.C) {
+			mmu.setRegisters8Bit(&reg, "F", registerF |= (1 << 4));
+		}
+		else {
+			mmu.setRegisters8Bit(&reg, "F", registerF &= ~(1 << 4));
+		}
+
+		if (pc == 0x2795) {
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Gameboy Emulator C++", "Breakpoint reached please look gui", NULL);
+		}
+		//cout << "PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
 		switch (opcode) {
 		case 0x00:
 			NOP();
@@ -242,19 +269,19 @@ bool isCarry16bit(int n) {
 
 bool CPU::isHalfCarry(uint8_t a, uint8_t b, std::string type) {
 	if (type == "ADD") {
-		return (((a & 0x0F) + (b & 0x0F)) & 0x10) == 0x10;
+		return (((a & 0xF) + (b & 0xF)) & 0x10) == 0x10;
 	}
 	else {
-		return ((a & 0x0F) - (b & 0x0F)) < 0;
+		return (((a & 0xF) - (b & 0xF)) & 0x10) == 0x10;
 	}
 }
 
 bool CPU::isHalfCarry16Bit(uint16_t a, uint16_t b, std::string type) {
 	if (type == "ADD") {
-		return (((a & 0x00FF) + (b & 0x00FF)) & 0x0100) == 0x0100;
+		return ((a + b) & 0xFFF) > 0xFFF;
 	}
 	else {
-		return ((a & 0x00FF) - (b & 0x00FF)) < 0;
+		return (a & 0xFF) - (b & 0xFF) < 0;
 	}
 }
 
@@ -1602,6 +1629,7 @@ void CPU::JR_CC_N(uint16_t opcode) {
 }
 
 void CPU::INC_N(uint16_t opcode) {
+	flags.N = false;
 	switch (opcode)
 	{
 		case 0x3C:
@@ -1610,10 +1638,17 @@ void CPU::INC_N(uint16_t opcode) {
 			if (reg.A == 0) {
 				flags.Z = true;
 			}
+			else {
+				flags.Z = false;
+			}
 
 			if (isHalfCarry(reg.A, 1, "ADD")) {
 				flags.H = true;
 			}
+			else {
+				flags.H = false;
+			}
+			std::cout << "Flag Half-carry in INC A at PC: " << hex << static_cast<unsigned>(pc) << " has a value of: " << flags.H << std::endl;
 			addCycles(4);
 			pc++;
 			break;
@@ -1623,10 +1658,17 @@ void CPU::INC_N(uint16_t opcode) {
 			if (reg.B == 0) {
 				flags.Z = true;
 			}
+			else {
+				flags.Z = false;
+			}
 
 			if (isHalfCarry(reg.B, 1, "ADD")) {
 				flags.H = true;
 			}
+			else {
+				flags.H = false;
+			}
+			std::cout << "Flag Half-carry in INC B at PC: " << hex << static_cast<unsigned>(pc) << " has a value of: " << flags.H << std::endl;
 			addCycles(4);
 			pc++;
 			break;
@@ -1636,10 +1678,19 @@ void CPU::INC_N(uint16_t opcode) {
 			if (reg.C == 0) {
 				flags.Z = true;
 			}
+			else {
+				flags.Z = false;
+			}
 
 			if (isHalfCarry(reg.C, 1, "ADD")) {
 				flags.H = true;
 			}
+			else {
+				flags.H = false;
+			}
+
+
+			std::cout << "Flag Half-carry in INC C at PC: " << hex << static_cast<unsigned>(pc) << " has a value of: " << flags.H << std::endl;
 			addCycles(4);
 			pc++;
 			break;
@@ -1649,9 +1700,15 @@ void CPU::INC_N(uint16_t opcode) {
 			if (reg.D == 0) {
 				flags.Z = true;
 			}
+			else {
+				flags.Z = false;
+			}
 
 			if (isHalfCarry(reg.D, 1, "ADD")) {
 				flags.H = true;
+			}
+			else {
+				flags.H = false;
 			}
 			addCycles(4);
 			pc++;
@@ -1662,9 +1719,15 @@ void CPU::INC_N(uint16_t opcode) {
 			if (reg.E == 0) {
 				flags.Z = true;
 			}
+			else {
+				flags.Z = false;
+			}
 
 			if (isHalfCarry(reg.E, 1, "ADD")) {
 				flags.H = true;
+			}
+			else {
+				flags.H = false;
 			}
 			addCycles(4);
 			pc++;
@@ -1675,9 +1738,15 @@ void CPU::INC_N(uint16_t opcode) {
 			if (reg.H == 0) {
 				flags.Z = true;
 			}
+			else {
+				flags.Z = false;
+			}
 
 			if (isHalfCarry(reg.H, 1, "ADD")) {
 				flags.H = true;
+			}
+			else {
+				flags.H = false;
 			}
 			addCycles(4);
 			pc++;
@@ -1688,9 +1757,15 @@ void CPU::INC_N(uint16_t opcode) {
 			if (reg.L == 0) {
 				flags.Z = true;
 			}
+			else {
+				flags.Z = false;
+			}
 
 			if (isHalfCarry(reg.L, 1, "ADD")) {
 				flags.H = true;
+			}
+			else {
+				flags.H = false;
 			}
 			addCycles(4);
 			pc++;
@@ -1701,9 +1776,15 @@ void CPU::INC_N(uint16_t opcode) {
 			if (mmu.read8(reg.HL) == 0) {
 				flags.Z = true;
 			}
+			else {
+				flags.Z = false;
+			}
 
 			if (isHalfCarry(mmu.read8(reg.HL), 1, "ADD")) {
 				flags.H = true;
+			}
+			else {
+				flags.H = false;
 			}
 			addCycles(12);
 			pc++;
@@ -1711,10 +1792,11 @@ void CPU::INC_N(uint16_t opcode) {
 		default:
 			break;
 	}
-	flags.N = false;
 }
 
 void CPU::DEC_N(uint16_t opcode) {
+
+	flags.N = true;
 	switch (opcode)
 	{
 	case 0x3D:
@@ -1732,6 +1814,9 @@ void CPU::DEC_N(uint16_t opcode) {
 		else {
 			flags.H = false;
 		}
+
+
+		std::cout << "Flag Half-carry in DEC A at PC: " << hex << static_cast<unsigned>(pc) << " has a value of: " << flags.H << std::endl;
 		addCycles(4);
 		pc++;
 		break;
@@ -1751,6 +1836,9 @@ void CPU::DEC_N(uint16_t opcode) {
 		else {
 			flags.H = false;
 		}
+
+
+		std::cout << "Flag Half-carry in DEC B at PC: " << hex << static_cast<unsigned>(pc) << " has a value of: " << flags.H << std::endl;
 		addCycles(4);
 		pc++;
 		break;
@@ -1769,6 +1857,9 @@ void CPU::DEC_N(uint16_t opcode) {
 		else {
 			flags.H = false;
 		}
+
+
+		std::cout << "Flag Half-carry in DEC C at PC: " << hex << static_cast<unsigned>(pc) << " has a value of: " << flags.H << std::endl;
 		addCycles(4);
 		pc++;
 		break;
@@ -1866,21 +1957,20 @@ void CPU::DEC_N(uint16_t opcode) {
 	default:
 		break;
 	}
-	flags.N = false;
 }
 
 void CPU::LDI_regHL_A() {
 	//std::cout << "LDI (HL), A" << endl;
 	mmu.write8(mmu.read(reg.HL), reg.A);
-	reg.HL++;
+	mmu.setRegisters16Bit(&reg, "HL", reg.HL + 1);
 	addCycles(8);
 	pc++;
 }
 
 void CPU::LDI_A_regHL() {
 	//std::cout << "LDI A, (HL)" << endl;
-	reg.A = mmu.read8(reg.HL);
-	reg.HL++;
+	mmu.setRegisters8Bit(&reg, "A", mmu.read8(reg.HL));
+	mmu.setRegisters16Bit(&reg, "HL", reg.HL + 1);
 	addCycles(8);
 	pc++;
 }
@@ -1969,7 +2059,7 @@ void CPU::DEC_NN(uint16_t opcode) {
 }
 
 void CPU::CPL() {
-	uint8_t registerA = 0x00;
+	uint8_t registerA = reg.A;
 	std::bitset<8> bitToFlip(registerA);
 	uint8_t regAFlipped = (uint8_t)bitToFlip.flip().to_ulong();
 	mmu.setRegisters8Bit(&reg, "A", regAFlipped);	
@@ -1981,6 +2071,11 @@ void CPU::CPL() {
 
 void CPU::CB_SWAP_N(uint16_t opcode) {
 	uint8_t swappedNibles;
+
+	flags.N = false;
+	flags.H = false;
+	flags.C = false;
+
 	switch (opcode)
 	{
 		case 0x37:
@@ -2082,10 +2177,6 @@ void CPU::CB_SWAP_N(uint16_t opcode) {
 	default:
 		break;
 	}
-
-	flags.N = false;
-	flags.H = false;
-	flags.C = false;
 }
 
 void CPU::ADD_A_N(uint16_t opcode){
@@ -2093,6 +2184,7 @@ void CPU::ADD_A_N(uint16_t opcode){
 	switch (opcode)
 	{
 		case 0x80:
+			flags.H = isHalfCarry(reg.A, reg.B, "ADD");
 			mmu.setRegisters8Bit(&reg, "A", reg.A + reg.B);
 			if (reg.A == 0) {
 				flags.Z = true;
@@ -2103,11 +2195,11 @@ void CPU::ADD_A_N(uint16_t opcode){
 
 			flags.C = isCarry8bit(reg.A);
 			flags.N = false;
-			flags.H = isHalfCarry(reg.A, reg.B, "ADD");
 			addCycles(4);
 			pc++;
 			break;
 		case 0x81:
+			flags.H = isHalfCarry(reg.A, reg.C, "ADD");
 			mmu.setRegisters8Bit(&reg, "A", reg.A + reg.C);
 			if (reg.A == 0) {
 				flags.Z = true;
@@ -2118,11 +2210,11 @@ void CPU::ADD_A_N(uint16_t opcode){
 
 			flags.C = isCarry8bit(reg.A);
 			flags.N = false;
-			flags.H = isHalfCarry(reg.A, reg.C, "ADD");
 			addCycles(4);
 			pc++;
 			break;
 		case 0x82:
+			flags.H = isHalfCarry(reg.A, reg.D, "ADD");
 			mmu.setRegisters8Bit(&reg, "A", reg.A + reg.D);
 			if (reg.A == 0) {
 				flags.Z = true;
@@ -2133,11 +2225,11 @@ void CPU::ADD_A_N(uint16_t opcode){
 
 			flags.C = isCarry8bit(reg.A);
 			flags.N = false;
-			flags.H = isHalfCarry(reg.A, reg.D, "ADD");
 			addCycles(4);
 			pc++;
 			break;
 		case 0x83:
+			flags.H = isHalfCarry(reg.A, reg.E, "ADD");
 			mmu.setRegisters8Bit(&reg, "A", reg.A + reg.E);
 			if (reg.A == 0) {
 				flags.Z = true;
@@ -2148,11 +2240,11 @@ void CPU::ADD_A_N(uint16_t opcode){
 
 			flags.C = isCarry8bit(reg.A);
 			flags.N = false;
-			flags.H = isHalfCarry(reg.A, reg.E, "ADD");
 			addCycles(4);
 			pc++;
 			break;
 		case 0x84:
+			flags.H = isHalfCarry(reg.A, reg.H, "ADD");
 			mmu.setRegisters8Bit(&reg, "A", reg.A + reg.H);
 			if (reg.A == 0) {
 				flags.Z = true;
@@ -2163,11 +2255,11 @@ void CPU::ADD_A_N(uint16_t opcode){
 
 			flags.C = isCarry8bit(reg.A);
 			flags.N = false;
-			flags.H = isHalfCarry(reg.A, reg.H, "ADD");
 			addCycles(4);
 			pc++;
 			break;
 		case 0x85:
+			flags.H = isHalfCarry(reg.A, reg.L, "ADD");
 			mmu.setRegisters8Bit(&reg, "A", reg.A + reg.L);
 			if (reg.A == 0) {
 				flags.Z = true;
@@ -2178,11 +2270,11 @@ void CPU::ADD_A_N(uint16_t opcode){
 
 			flags.C = isCarry8bit(reg.A);
 			flags.N = false;
-			flags.H = isHalfCarry(reg.A, reg.L, "ADD");
 			addCycles(4);
 			pc++;
 			break;
 		case 0x86:
+			flags.H = isHalfCarry(reg.A, mmu.read8(reg.HL), "ADD");
 			mmu.setRegisters8Bit(&reg, "A", reg.A + mmu.read8(reg.HL));
 			if (reg.A == 0) {
 				flags.Z = true;
@@ -2193,11 +2285,11 @@ void CPU::ADD_A_N(uint16_t opcode){
 
 			flags.C = isCarry8bit(reg.A);
 			flags.N = false;
-			flags.H = isHalfCarry(reg.A, mmu.read8(reg.HL), "ADD");
 			addCycles(8);
 			pc++;
 			break;
 		case 0x87:
+			flags.H = isHalfCarry(reg.A, reg.A, "ADD");
 			mmu.setRegisters8Bit(&reg, "A", reg.A + reg.A);
 			if (reg.A == 0) {
 				flags.Z = true;
@@ -2208,12 +2300,12 @@ void CPU::ADD_A_N(uint16_t opcode){
 
 			flags.C = isCarry8bit(reg.A);
 			flags.N = false;
-			flags.H = isHalfCarry(reg.A, reg.A, "ADD");
 			addCycles(4);
 			pc++;
 			break;
 		case 0xC6:
 			n = mmu.read8(pc + 1);
+			flags.H = isHalfCarry(reg.A, n, "ADD");
 			mmu.setRegisters8Bit(&reg, "A", reg.A + n);
 			if (reg.A == 0) {
 				flags.Z = true;
@@ -2224,7 +2316,6 @@ void CPU::ADD_A_N(uint16_t opcode){
 
 			flags.C = isCarry8bit(reg.A);
 			flags.N = false;
-			flags.H = isHalfCarry(reg.A, n, "ADD");
 			addCycles(8);
 			pc+=2;
 			break;
@@ -2465,6 +2556,7 @@ void CPU::POP_NN(uint16_t opcode) {
 		case 0xE1:
 			mmu.pop(&nn);
 			mmu.setRegisters16Bit(&reg, "HL", nn);
+			std::cout << "POP HL, PC value is: " << hex << static_cast<unsigned>(pc) << ", Value is: " << hex << static_cast<unsigned>(nn) << std::endl;
 			pc++;
 			addCycles(12);
 			break;
@@ -2503,7 +2595,7 @@ void CPU::PUSH_NN(uint16_t opcode) {
 }
 
 void CPU::LD_SP_HL() {
-	mmu.setRegisters16Bit(&reg, "HL", mmu.sp);
+	mmu.sp = reg.HL;
 	pc++;
 	addCycles(8);
 }

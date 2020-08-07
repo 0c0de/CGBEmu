@@ -1,8 +1,10 @@
 #include "mmu.h"
 #include "CPU.h"
+#include <SDL.h>
+
 using namespace std;
 
-CPU cpus;
+//CPU cpus;
 
 uint16_t MMU::read(uint16_t addr) {
 	return read8(addr) + (read8(addr + 1) << 8);
@@ -22,6 +24,7 @@ uint8_t MMU::read8(uint16_t addr) {
 		return rom[addr];
 	case 0x8000:
 	case 0x9000:
+		//cout << "Original address: " << hex << static_cast<unsigned>(addr) << " new address: " << hex << (addr - 0x8000) << endl;
 		return vram[addr - 0x8000];
 	case 0xA000:
 	case 0xB000:
@@ -78,7 +81,8 @@ void MMU::write(uint16_t addr, uint16_t value) {
 		break;
 	case 0x8000:
 	case 0x9000:
-		vram[addr - 0x8000] = value;
+		vram[addr & 0x1FFF] = value; 
+		//cout << "Saving in vram at : " << hex << static_cast<unsigned>(addr & 0x1FFF) << " the value: " << hex << vram[addr & 0x1FFF] << endl;
 		break;
 	case 0xA000:
 	case 0xB000:
@@ -124,6 +128,7 @@ void MMU::write(uint16_t addr, uint16_t value) {
 
 
 void MMU::write8(uint16_t addr, uint8_t value) {
+	uint16_t n = 0;
 	//std::cout << "Writing 1 Byte in: " << hex << static_cast<unsigned>(addr) << " and a value of: " << hex << static_cast<unsigned>(value) << std::endl;
 	//std::cout << "addr & 0xF000: " << hex << static_cast<unsigned>(addr & 0xF000) << std::endl;
 	switch (addr & 0xf000)
@@ -140,7 +145,10 @@ void MMU::write8(uint16_t addr, uint8_t value) {
 		break;
 	case 0x8000:
 	case 0x9000:
-		vram[addr - 0x8000] = value;
+		n = addr - 0x8000;
+		vram[n] = value;
+		//cout << "Saving in vram at : " << hex << static_cast<unsigned>(addr - 0x8000) << " the value: " << hex << vram[n] << endl;
+
 		break;
 	case 0xA000:
 	case 0xB000:
@@ -148,7 +156,6 @@ void MMU::write8(uint16_t addr, uint8_t value) {
 		break;
 	case 0xC000:
 	case 0xD000:
-		//std::cout << "Writing WRAM at : " << hex << static_cast<unsigned>(addr) << ", with a value of: " << hex << static_cast<unsigned>(value) << std::endl;
 		wram[addr - 0xC000] = value;
 		break;
 	case 0xE000:
@@ -194,7 +201,8 @@ void MMU::push(uint16_t value) {
 }
 
 void MMU::pop(uint16_t *value) {
-	*value = (read8(sp + 1) << 8 | (read8(sp)));
+	*value = ((read8(sp) | read8(sp + 1) << 8));
+	cout << "Popped value: " << hex << &value << endl;
 	sp+=2;
 }
 

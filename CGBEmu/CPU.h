@@ -5,6 +5,7 @@
 #include <bitset>
 #include <fstream>
 #include <thread>
+#include <SDL.h>
 using namespace std;
 //CPU is similar to Z80 but with modified instructions
 class CPU {

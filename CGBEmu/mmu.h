@@ -55,7 +55,7 @@ class MMU {
 		uint16_t ram[0x2000];
 		uint16_t echo_ram[0x1E00];
 		uint8_t sprite_attrib[0xA0];
-		uint8_t io[0x4C];
+		uint8_t io[0xFF];
 		uint8_t internal_ram[0x7F];
 
 		uint16_t stack[0xFFFF];

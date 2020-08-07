@@ -48,15 +48,14 @@ void runApp() {
 	//Load the bios of the GameBoy
 	//gameboy.loadBIOS();
 	//Load the game specified
-<<<<<<< HEAD
-	gameboy.loadGame("games/hello_world.gb");
+	//gameboy.loadGame("games/hello_world.gb");
+	//For PC
 	//gameboy.loadGame("F:/Tetris.gb");
-=======
 	//gameboy.loadGame("games/test01CPU.gb");
-	gameboy.loadGame("F:/Tetris.gb");
+	//For laptop
+	gameboy.loadGame("D:/Tetris.gb");
 	std::thread t1(&CPU::runCPU, &gameboy);
 	//gameboy.runLife();
->>>>>>> 5eee179c3b59ff502bfb9d59bc38a498f35f05b6
 	//gameboy.loadGame("F:/hello-world.gb");
 	if (mainWindow != NULL) {
 		bool isEmuRunning = true;
