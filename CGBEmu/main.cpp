@@ -50,10 +50,10 @@ void runApp() {
 	//Load the game specified
 	//gameboy.loadGame("games/hello_world.gb");
 	//For PC
-	//gameboy.loadGame("F:/Tetris.gb");
+	gameboy.loadGame("E:/Tetris.gb");
 	//gameboy.loadGame("games/test01CPU.gb");
 	//For laptop
-	gameboy.loadGame("D:/Tetris.gb");
+	//gameboy.loadGame("D:/Tetris.gb");
 	std::thread t1(&CPU::runCPU, &gameboy);
 	//gameboy.runLife();
 	//gameboy.loadGame("F:/hello-world.gb");

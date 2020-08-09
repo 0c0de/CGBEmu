@@ -1,7 +1,7 @@
 ﻿  CPU.cpp
-C:\Users\josel\CGBEmu\CGBEmu\CPU.cpp(1135,43): warning C4244: 'argumento': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
-C:\Users\josel\CGBEmu\CGBEmu\CPU.cpp(1142,43): warning C4244: 'argumento': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
-C:\Users\josel\CGBEmu\CGBEmu\CPU.cpp(1566,26): warning C4244: 'argumento': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
-C:\Users\josel\CGBEmu\CGBEmu\CPU.cpp(2569,11): warning C4101: 'nn': variable local sin referencia
-C:\Users\josel\CGBEmu\CGBEmu\CPU.cpp(2710,15): warning C4244: 'inicializando': conversión de 'std::streamoff' a 'int'; posible pérdida de datos
+c:\users\josel\cgbemu\cgbemu\cpu.cpp(1135): warning C4244: 'argumento': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
+c:\users\josel\cgbemu\cgbemu\cpu.cpp(1142): warning C4244: 'argumento': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
+c:\users\josel\cgbemu\cgbemu\cpu.cpp(1567): warning C4244: 'argumento': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
+c:\users\josel\cgbemu\cgbemu\cpu.cpp(2559): warning C4101: 'nn': variable local sin referencia
+c:\users\josel\cgbemu\cgbemu\cpu.cpp(2700): warning C4244: 'inicializando': conversión de 'std::streamoff' a 'int'; posible pérdida de datos
   CGBEmu.vcxproj -> C:\Users\josel\CGBEmu\Debug\CGBEmu.exe
