@@ -67,70 +67,12 @@ uint8_t MMU::read8(uint16_t addr) {
 
 
 void MMU::write(uint16_t addr, uint16_t value) {
-	switch (addr & 0xf000)
-	{
-	case 0x0000:
-	case 0x1000:
-	case 0x2000:
-	case 0x3000:
-	case 0x4000:
-	case 0x5000:
-	case 0x6000:
-	case 0x7000:
-		rom[addr] = value;
-		break;
-	case 0x8000:
-	case 0x9000:
-		vram[addr & 0x1FFF] = value; 
-		//cout << "Saving in vram at : " << hex << static_cast<unsigned>(addr & 0x1FFF) << " the value: " << hex << vram[addr & 0x1FFF] << endl;
-		break;
-	case 0xA000:
-	case 0xB000:
-		ram[addr - 0xA000] = value;
-		break;
-	case 0xC000:
-	case 0xD000:
-		wram[addr - 0xC000] = value;
-		break;
-	case 0xE000:
-		ram[addr - 0xE000] = value;
-		break;
-	case 0xF000:
-		switch (addr & 0x0F00)
-		{
-		case 0x0000: case 0x0100: case 0x0200: case 0x0300: case 0x0400: case 0x0500: case 0x0600:
-		case 0x0700: case 0x0800: case 0x0900: case 0x0A00: case 0x0B00: case 0x0C00: case 0x0D00:
-			ram[addr - 0xE000] = value;
-			break;
-		case 0xE00:
-			if (addr >= 0xfea0) {
-				sprite_attrib[addr - 0xFEA0] = value;
-				break;
-			}
-			break;
-		case 0xF00:
-			if (addr >= 0xff80) {
-				internal_ram[addr - 0xFF80] = value;
-				break;
-			}
-			else {
-				io[addr - 0xff00] = value;
-				break;
-			}
-			break;
-		}
-		break;
-	default:
-		cout << "Write Function: Memory location is not mapped: " << hex << addr << endl;
-		break;
-	}
+	write8(addr, value >> 8);
+	write8(addr+1, (uint8_t)value);
 }
 
 
 void MMU::write8(uint16_t addr, uint8_t value) {
-	uint16_t n = 0;
-	//std::cout << "Writing 1 Byte in: " << hex << static_cast<unsigned>(addr) << " and a value of: " << hex << static_cast<unsigned>(value) << std::endl;
-	//std::cout << "addr & 0xF000: " << hex << static_cast<unsigned>(addr & 0xF000) << std::endl;
 	switch (addr & 0xf000)
 	{
 	case 0x0000:
@@ -145,10 +87,8 @@ void MMU::write8(uint16_t addr, uint8_t value) {
 		break;
 	case 0x8000:
 	case 0x9000:
-		n = addr - 0x8000;
-		vram[n] = value;
-		//cout << "Saving in vram at : " << hex << static_cast<unsigned>(addr - 0x8000) << " the value: " << hex << vram[n] << endl;
-
+		vram[addr - 0x8000] = value;
+		std::cout << "Writing in VRAM at: " << hex << static_cast<unsigned>(addr - 0x8000) << std::endl;
 		break;
 	case 0xA000:
 	case 0xB000:
@@ -173,7 +113,9 @@ void MMU::write8(uint16_t addr, uint8_t value) {
 				sprite_attrib[addr - 0xFEA0] = value;
 				break;
 			}
-			break;
+			else {
+				break;
+			}
 		case 0xF00:
 			if (addr >= 0xff80) {
 				internal_ram[addr - 0xFF80] = value;
@@ -181,6 +123,10 @@ void MMU::write8(uint16_t addr, uint8_t value) {
 			}
 			else {
 				io[addr - 0xff00] = value;
+				if (addr == 0xFFFF) {
+					SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Gameboy Emulator C++", "Breakpoint reached please look gui", NULL);
+					cout << "Writing in HRAM at " << hex << static_cast<unsigned>(addr) << " Converted address: " << hex << static_cast<unsigned>(addr - 0xFF80) << ", Value of: " << hex << static_cast<unsigned>(value) << endl;
+				}
 				break;
 			}
 			break;
@@ -193,16 +139,19 @@ void MMU::write8(uint16_t addr, uint8_t value) {
 }
 
 void MMU::push(uint16_t value) {
-	//std::cout << "Writing in RAM: " << std::hex << value << " at position: " << std::hex << sp << std::endl;
-	sp--;
-	write8(sp, value >> 8);
+	if (value > 0xFF) {
+		sp--;
+		write8(sp, value >> 8);
+		std::cout << "Written values in RAM: " << hex << static_cast<unsigned>(read8(sp)) << std::endl;
+	}
 	sp--;
 	write8(sp, (uint8_t)value);
+	std::cout << "Written values in RAM: " << hex << static_cast<unsigned>(read8(sp)) << std::endl;
 }
 
 void MMU::pop(uint16_t *value) {
+	//std::cout << "POP Values: sp, sp + 1 << 8" << hex << static_cast<unsigned>((read8(sp) | read8(sp + 1) << 8)) << std::endl;
 	*value = ((read8(sp) | read8(sp + 1) << 8));
-	cout << "Popped value: " << hex << &value << endl;
 	sp+=2;
 }
 

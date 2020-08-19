@@ -1,7 +1,16 @@
 ﻿  CPU.cpp
-c:\users\josel\cgbemu\cgbemu\cpu.cpp(1135): warning C4244: 'argumento': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
-c:\users\josel\cgbemu\cgbemu\cpu.cpp(1142): warning C4244: 'argumento': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
-c:\users\josel\cgbemu\cgbemu\cpu.cpp(1567): warning C4244: 'argumento': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
-c:\users\josel\cgbemu\cgbemu\cpu.cpp(2559): warning C4101: 'nn': variable local sin referencia
-c:\users\josel\cgbemu\cgbemu\cpu.cpp(2700): warning C4244: 'inicializando': conversión de 'std::streamoff' a 'int'; posible pérdida de datos
+  mmu.cpp
+c:\users\josel\cgbemu\cgbemu\mmu.cpp(24): warning C4244: 'return': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
+c:\users\josel\cgbemu\cgbemu\mmu.cpp(28): warning C4244: 'return': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
+c:\users\josel\cgbemu\cgbemu\mmu.cpp(31): warning C4244: 'return': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
+c:\users\josel\cgbemu\cgbemu\mmu.cpp(34): warning C4244: 'return': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
+c:\users\josel\cgbemu\cgbemu\mmu.cpp(36): warning C4244: 'return': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
+c:\users\josel\cgbemu\cgbemu\mmu.cpp(42): warning C4244: 'return': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
+c:\users\josel\cgbemu\cgbemu\cpu.cpp(310): warning C4554: "&": compruebe la prioridad de operador para posibles errores; utilice paréntesis para indicar la prioridad
+c:\users\josel\cgbemu\cgbemu\cpu.cpp(319): warning C4554: "&": compruebe la prioridad de operador para posibles errores; utilice paréntesis para indicar la prioridad
+c:\users\josel\cgbemu\cgbemu\cpu.cpp(1172): warning C4244: 'argumento': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
+c:\users\josel\cgbemu\cgbemu\cpu.cpp(1602): warning C4244: 'argumento': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
+c:\users\josel\cgbemu\cgbemu\cpu.cpp(2582): warning C4101: 'nn': variable local sin referencia
+c:\users\josel\cgbemu\cgbemu\cpu.cpp(3121): warning C4244: 'inicializando': conversión de 'std::streamoff' a 'int'; posible pérdida de datos
+c:\users\josel\cgbemu\cgbemu\mmu.cpp(66): warning C4715: 'MMU::read8': no todas las rutas de acceso de control devuelven un valor
   CGBEmu.vcxproj -> C:\Users\josel\CGBEmu\Debug\CGBEmu.exe

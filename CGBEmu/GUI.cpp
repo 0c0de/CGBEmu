@@ -3,6 +3,7 @@
 bool isActiveMemoryViewer = true;
 
 bool isActiveFlags = true;
+bool isActiveGame = true;
 bool initiatedLoopMMU = false;
 bool showROM = false;
 bool showHRAM = false;
@@ -51,7 +52,7 @@ void drawMMU(MMU *mmu) {
 
 		if (showRAM) {
 			ImGui::Text("RAM");
-			ROMData.DrawContents((void*)(mmu->ram), 0x2000);
+			ROMData.DrawContents((void*)(mmu->ram), 0x4000);
 		}
 
 		if (showVRAM) {
@@ -90,7 +91,7 @@ void drawMMU(MMU *mmu) {
 	}
 }
 
-void drawFlags(GameboyFlags *flags, GameboyRegisters *reg, GPU *gpu) {
+void drawFlags(GameboyFlags *flags, GameboyRegisters *reg, GPU *gpu, CPU *gameboy) {
 	ImGui::Begin("Flag State Viewer", &isActiveFlags, ImGuiWindowFlags_AlwaysAutoResize);
 	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 	if (flags->Z) {
@@ -120,6 +121,10 @@ void drawFlags(GameboyFlags *flags, GameboyRegisters *reg, GPU *gpu) {
 	else {
 		ImGui::Text("Substract Flag: 0");
 	}
+
+	ImGui::Spacing();
+
+	ImGui::Text("PC: ", gameboy->pc);
 
 	ImGui::Spacing();
 
@@ -155,4 +160,11 @@ void drawFlags(GameboyFlags *flags, GameboyRegisters *reg, GPU *gpu) {
 	ImGui::EndGroup();
 	
 	ImGui::End();
+}
+
+void drawGame(SDL_Texture* gameTexture) {
+	ImGui::Begin("Gameboy DMG", &isActiveGame, ImGuiWindowFlags_AlwaysAutoResize);
+
+	ImGui::Image()
+
 }

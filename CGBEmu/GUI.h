@@ -13,4 +13,6 @@
 
 void drawMMU(MMU *mmu);
 
-void drawFlags(GameboyFlags *flags, GameboyRegisters *reg, GPU *gpu);
+void drawFlags(GameboyFlags *flags, GameboyRegisters *reg, GPU *gpu, CPU *gameboy);
+
+void drawGame(SDL_Texture* gameTexture);

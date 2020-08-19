@@ -17,6 +17,24 @@ public:
 	//Steps of the GPU
 	void step(CPU *gameboy, MMU *mmu);
 
-private:
+	//Get SCY
+	uint8_t getSCY(MMU *mmu);
 
+	//Get SCX
+	uint8_t getSCX(MMU *mmu);
+
+	//Is Sprite Big
+	bool isSpriteBig(MMU *mmu);
+
+	//Get BGMap to be used
+	bool bgUsed(MMU *mmu);
+
+	//Render scan
+	void renderScan(MMU *mmu);
+
+	//Draw the framebuffer into screen
+	void DrawScreen(MMU* mmu);
+
+private:
+	bool isKthBitSet(uint8_t n, uint8_t k);
 };
