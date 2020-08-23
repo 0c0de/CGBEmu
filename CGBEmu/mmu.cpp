@@ -88,7 +88,6 @@ void MMU::write8(uint16_t addr, uint8_t value) {
 	case 0x8000:
 	case 0x9000:
 		vram[addr - 0x8000] = value;
-		std::cout << "Writing in VRAM at: " << hex << static_cast<unsigned>(addr - 0x8000) << std::endl;
 		break;
 	case 0xA000:
 	case 0xB000:
@@ -123,10 +122,6 @@ void MMU::write8(uint16_t addr, uint8_t value) {
 			}
 			else {
 				io[addr - 0xff00] = value;
-				if (addr == 0xFFFF) {
-					SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Gameboy Emulator C++", "Breakpoint reached please look gui", NULL);
-					cout << "Writing in HRAM at " << hex << static_cast<unsigned>(addr) << " Converted address: " << hex << static_cast<unsigned>(addr - 0xFF80) << ", Value of: " << hex << static_cast<unsigned>(value) << endl;
-				}
 				break;
 			}
 			break;
@@ -142,11 +137,9 @@ void MMU::push(uint16_t value) {
 	if (value > 0xFF) {
 		sp--;
 		write8(sp, value >> 8);
-		std::cout << "Written values in RAM: " << hex << static_cast<unsigned>(read8(sp)) << std::endl;
 	}
 	sp--;
 	write8(sp, (uint8_t)value);
-	std::cout << "Written values in RAM: " << hex << static_cast<unsigned>(read8(sp)) << std::endl;
 }
 
 void MMU::pop(uint16_t *value) {

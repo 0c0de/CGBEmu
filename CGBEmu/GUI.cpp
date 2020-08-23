@@ -15,7 +15,7 @@ bool showSPRITEATTR = false;
 bool showGSA = false;
 
 static MemoryEditor ROMData;
-
+static MemoryEditor Palette;
 void drawMMU(MMU *mmu) {
 	if (isActiveMemoryViewer) {
 
@@ -25,14 +25,14 @@ void drawMMU(MMU *mmu) {
 		{
 			if (ImGui::BeginMenu("File"))
 			{
-				ImGui::MenuItem("View ROM", "Ctrl+O", &showROM);
-				ImGui::MenuItem("View VRAM", "Ctrl+O", &showVRAM);
-				ImGui::MenuItem("View RAM", "Ctrl+O", &showRAM);
-				ImGui::MenuItem("View HRAM", "Ctrl+O", &showHRAM);
-				ImGui::MenuItem("View WRAM", "Ctrl+O", &showWRAM);
-				ImGui::MenuItem("View IO", "Ctrl+O", &showIO);
-				ImGui::MenuItem("View SPRITEATTR", "Ctrl+O", &showSPRITEATTR);
-				ImGui::MenuItem("View Graphic Special Adressses", "Ctrl+O", &showGSA);
+				ImGui::MenuItem("View ROM", "Ctrl+Q", &showROM);
+				ImGui::MenuItem("View VRAM", "Ctrl+A", &showVRAM);
+				ImGui::MenuItem("View RAM", "Ctrl+Z", &showRAM);
+				ImGui::MenuItem("View HRAM", "Ctrl+E", &showHRAM);
+				ImGui::MenuItem("View WRAM", "Ctrl+D", &showWRAM);
+				ImGui::MenuItem("View IO", "Ctrl+C", &showIO);
+				ImGui::MenuItem("View SPRITEATTR", "Ctrl+P", &showSPRITEATTR);
+				ImGui::MenuItem("View Graphic Special Adressses", "Ctrl+L", &showGSA);
 
 				ImGui::EndMenu();
 			}
@@ -92,7 +92,7 @@ void drawMMU(MMU *mmu) {
 }
 
 void drawFlags(GameboyFlags *flags, GameboyRegisters *reg, GPU *gpu, CPU *gameboy) {
-	ImGui::Begin("Flag State Viewer", &isActiveFlags, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::Begin("Flag State Viewer", &isActiveFlags, ImGuiWindowFlags_MenuBar);
 	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 	if (flags->Z) {
 		ImGui::Text("Zero Flag: 1");
@@ -158,13 +158,20 @@ void drawFlags(GameboyFlags *flags, GameboyRegisters *reg, GPU *gpu, CPU *gamebo
 	ImGui::Text("GPU Clock: %d", gpu->clock);
 	ImGui::Text("GPU Mode: %d", gpu->mode);
 	ImGui::EndGroup();
+
+	ImGui::Spacing();
+	ImGui::Spacing();
+
+	ImGui::BeginGroup();
+	ImGui::Text("Palette");
+	Palette.DrawContents((void*)(gpu->palette), 160 * 144);
+	ImGui::EndGroup();
 	
 	ImGui::End();
 }
 
 void drawGame(SDL_Texture* gameTexture) {
 	ImGui::Begin("Gameboy DMG", &isActiveGame, ImGuiWindowFlags_AlwaysAutoResize);
-
-	ImGui::Image()
+	//ImGui::Image()
 
 }

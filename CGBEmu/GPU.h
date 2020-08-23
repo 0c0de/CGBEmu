@@ -14,8 +14,11 @@ public:
 	//Scanline counter
 	uint8_t line = 0x0;
 
+	//Palette of colours
+	int palette[160][144][4];
+
 	//Steps of the GPU
-	void step(CPU *gameboy, MMU *mmu);
+	void step(CPU *gameboy, MMU *mmu, SDL_Renderer* render, SDL_Texture *texture);
 
 	//Get SCY
 	uint8_t getSCY(MMU *mmu);
@@ -37,4 +40,6 @@ public:
 
 private:
 	bool isKthBitSet(uint8_t n, uint8_t k);
+
+	int SDL_CalculatePitch(Uint32 format, int width);
 };

@@ -72,7 +72,8 @@ MMU *CPU::getMMUValues() {
 void CPU::runCPU() {
 	uint8_t cb_opcode;
 	uint8_t opcode;
-	while (true)
+	bool isRuning = true;
+	while (isRuning)
 	{
 		opcode = mmu.read8(pc);
 
@@ -108,7 +109,7 @@ void CPU::runCPU() {
 		/*if (pc == 0x33) {
 			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Gameboy Emulator C++", "Breakpoint reached please look gui", NULL);
 			cout << "BREAKPOINT!!!! PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
-		}*/
+		}
 
 		if (pc == 0x27CE) {
 			cout << "BREAKPOINT!!!! PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
@@ -118,7 +119,7 @@ void CPU::runCPU() {
 		if (pc == 0x27D0) {
 			cout << "BREAKPOINT!!!! PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
 			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Gameboy Emulator C++", "Breakpoint reached please look gui", NULL);
-		}
+		}*/
 
 		/*if (pc == 0x2824) {
 			cout << "BREAKPOINT!!!! PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
@@ -135,9 +136,6 @@ void CPU::runCPU() {
 			cout << "PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
 		}*/
 
-		if (pc >= 0x27C3) {
-			cout << "PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
-		}
 		switch (opcode) {
 		case 0x00:
 			NOP();
@@ -278,14 +276,18 @@ void CPU::runCPU() {
 					break;
 				default:
 					cout << "Opcode CB " << hex << static_cast<unsigned>(cb_opcode) << " not implemented, PC: " << hex << static_cast<unsigned>(pc) << endl;
+					isRuning = false;
 					break;
 			}
 			break;
 		default:
 			cout << "Opcode: " << hex << static_cast<unsigned>(opcode) << " not implemented, PC: " << hex << static_cast<unsigned>(pc) << endl;
+			isRuning = false;
 			break;
 		}
 	}
+
+	getchar();
 }
 
 bool isKthBitSet(int n, int k)
