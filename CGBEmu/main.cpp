@@ -24,7 +24,7 @@ void runApp() {
 
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);*/
 
-	mainWindow = SDL_CreateWindow("Gameboy Emulator C++", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 160, 144, (SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI));
+	mainWindow = SDL_CreateWindow("Gameboy Emulator C++", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, (SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI));
 	render = SDL_CreateRenderer(mainWindow, -1, SDL_RENDERER_ACCELERATED);
 	textureFramebuffer = SDL_CreateTexture(render, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, 160, 144);
 	if (textureFramebuffer == NULL) {
@@ -58,10 +58,10 @@ void runApp() {
 	//Load the game specified
 	//gameboy.loadGame("games/hello_world.gb");
 	//For PC
-	gameboy.loadGame("E:/Tetris.gb");
+	//gameboy.loadGame("E:/Tetris.gb");
 	//gameboy.loadGame("games/test01CPU.gb");
 	//For laptop
-	//gameboy.loadGame("D:/Tetris.gb");
+	gameboy.loadGame("D:/Tetris.gb");
 	std::thread t1(&CPU::runCPU, &gameboy);
 	//gameboy.runLife();
 	//gameboy.loadGame("F:/hello-world.gb");
@@ -107,7 +107,7 @@ void runApp() {
 
 
 			//SDL_RenderCopy(render, textureFramebuffer, NULL, NULL);
-			SDL_RenderPresent(render);
+			//SDL_RenderPresent(render);
 			//drawMMU(mmuValues);
 			//drawFlags(flagState, reg, &gpu, &gameboy);
 

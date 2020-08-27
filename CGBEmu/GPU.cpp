@@ -41,7 +41,7 @@ bool GPU::bgUsed(MMU* mmu) {
 	return isKthBitSet(n, 3);
 }
 
-void GPU::renderScan(MMU *mmu) {
+void GPU::renderScan(MMU *mmu, SDL_Renderer* render) {
 	uint16_t offset = 0;
 	if (bgUsed(mmu)) {
 		offset = 0x1C00;
@@ -55,47 +55,81 @@ void GPU::renderScan(MMU *mmu) {
 	uint8_t y = (line + getSCY(mmu)) & 0x07;
 	uint8_t x = getSCX(mmu) & 0x07;
 
-	//PRINT ALL VALUES FROM 0x000 TO 0xFFF in VRAM
-	for (int a = 0; a < 0xFFF; a+=2) {
-		for (int b = 0; b < 8; b++) {
-			for (int x = 0; x < 160; x++) {
-				for (int y = 0; y < 144; y++) {
-					//0x3
-					if (isKthBitSet(mmu->read8(0x8000 + a), b) && isKthBitSet(mmu->read8(0x8000 + (a + 1)), b)) {
-						palette[x][y][0] = 0x1f;
-						palette[x][y][1] = 0x33;
-						palette[x][y][2] = 0x24;
-						palette[x][y][3] = SDL_ALPHA_OPAQUE;
-					}
+	uint16_t renderOffset = line * 160;
 
-					//0x2
-					if (!isKthBitSet(mmu->read8(0x8000 + a), b) && isKthBitSet(mmu->read8(0x8000 + (a + 1)), b)) {
-						palette[x][y][0] = 0x3d;
-						palette[x][y][1] = 0x66;
-						palette[x][y][2] = 0x47;
-						palette[x][y][3] = SDL_ALPHA_OPAQUE;
-					}
+	uint16_t color;
+	uint16_t tileSelected = mmu->read8(offset + lineOffset);
 
-					//0x1
-					if (isKthBitSet(mmu->read8(0x8000 + a), b) && !isKthBitSet(mmu->read8(0x8000 + (a + 1)), b)) {
-						palette[x][y][0] = 0x5c;
-						palette[x][y][1] = 0x99;
-						palette[x][y][2] = 0x6b;
-						palette[x][y][3] = SDL_ALPHA_OPAQUE;
-					}
+	for (int i = 0; i < 160; i++) {
+		//0x3
+		if (isKthBitSet(mmu->read8(0x8000 + a), b) && isKthBitSet(mmu->read8(0x8000 + (a + 1)), b)) {
+			SDL_SetRenderDrawColor(render, 0x1f, 0x33, 0x24, 0xff);
+			//palette[a - 2][lineTemp] = 0x1f3324;
+		}
 
-					//0x0
-					if (!isKthBitSet(mmu->read8(0x8000 + a), b) && !isKthBitSet(mmu->read8(0x8000 + (a + 1)), b)) {
-						palette[x][y][0] = 0x7a;
-						palette[x][y][1] = 0xcc;
-						palette[x][y][2] = 0x8f;
-						palette[x][y][3] = SDL_ALPHA_OPAQUE;
-					}
-				}
+		//0x2
+		if (!isKthBitSet(mmu->read8(0x8000 + a), b) && isKthBitSet(mmu->read8(0x8000 + (a + 1)), b)) {
+			SDL_SetRenderDrawColor(render, 0x3d, 0x66, 0x47, 0xFF);
+			//palette[a - 2][lineTemp] = 0x3d6647;
+			//palette[lineTemp * 160 + b] = 0x3d6647;
+		}
 
-			}
+		//0x1
+		if (isKthBitSet(mmu->read8(0x8000 + a), b) && !isKthBitSet(mmu->read8(0x8000 + (a + 1)), b)) {
+			SDL_SetRenderDrawColor(render, 0x5c, 0x99, 0x6b, 0xFF);
+			//palette[a - 2][lineTemp] = 0x5c996b;
+			//palette[lineTemp * 160 + b] = 0x5c996b;
+		}
+
+		//0x0
+		if (!isKthBitSet(mmu->read8(0x8000 + a), b) && !isKthBitSet(mmu->read8(0x8000 + (a + 1)), b)) {
+			SDL_SetRenderDrawColor(render, 0x7a, 0xcc, 0x8f, 0xff);
+			//palette[a - 2][lineTemp] = 0x7acc8f;
+			//palette[lineTemp * 160 + b] = 0x7acc8f;
 		}
 	}
+
+	//PRINT ALL VALUES FROM 0x000 TO 0xFFF in VRAM
+	/*for (uint16_t a = 0; a < 0xFFF; a+=2) {
+		for (uint16_t b = 0; b < 8; b++) {
+			SDL_Rect rect;
+			rect.h = 1;
+			rect.w = 1;
+
+			rect.x = (a * lineTemp) + b;
+			rect.y = lineTemp;
+			//0x3
+			if (isKthBitSet(mmu->read8(0x8000 + a), b) && isKthBitSet(mmu->read8(0x8000 + (a + 1)), b)) {
+				SDL_SetRenderDrawColor(render, 0x1f, 0x33, 0x24, 0xff);
+				//palette[a - 2][lineTemp] = 0x1f3324;
+			}
+
+			//0x2
+			if (!isKthBitSet(mmu->read8(0x8000 + a), b) && isKthBitSet(mmu->read8(0x8000 + (a + 1)), b)) {
+				SDL_SetRenderDrawColor(render, 0x3d, 0x66, 0x47, 0xFF);
+				//palette[a - 2][lineTemp] = 0x3d6647;
+				//palette[lineTemp * 160 + b] = 0x3d6647;
+			}
+
+			//0x1
+			if (isKthBitSet(mmu->read8(0x8000 + a), b) && !isKthBitSet(mmu->read8(0x8000 + (a + 1)), b)) {
+				SDL_SetRenderDrawColor(render, 0x5c, 0x99, 0x6b, 0xFF);
+				//palette[a - 2][lineTemp] = 0x5c996b;
+				//palette[lineTemp * 160 + b] = 0x5c996b;
+			}
+
+			//0x0
+			if (!isKthBitSet(mmu->read8(0x8000 + a), b) && !isKthBitSet(mmu->read8(0x8000 + (a + 1)), b)) {
+				SDL_SetRenderDrawColor(render, 0x7a, 0xcc, 0x8f, 0xff);
+				//palette[a - 2][lineTemp] = 0x7acc8f;
+				//palette[lineTemp * 160 + b] = 0x7acc8f;
+			}
+			SDL_RenderFillRect(render, &rect);
+		}
+		if (a % 160 == 0) {
+			lineTemp++;
+		}
+	}*/
 
 }
 
@@ -114,16 +148,22 @@ void GPU::step(CPU *gameboy, MMU *mmu, SDL_Renderer* render, SDL_Texture *textur
 
 				mmu->write8(0xFF44, line);
 
-				if (line == 0x90) {
+				if (line == 0x8F) {
 					//Enter in Vertical Blanking Mode
 					mode = 1;
 					//TODO: Write a function that write data into the SDL Render
-					for (int x = 0; x < 160; x++) {
+					std::cout << "Writing data into SDL Render" << std::endl;
+					//uint16_t screenData[160*144*3];
+
+					/*for (int x = 0; x < 160; x++) {
 						for (int y = 0; y < 144; y++) {
-							SDL_SetRenderDrawColor(render, palette[x][y][0], palette[x][y][1], palette[x][y][2], palette[x][y][3]);
-							SDL_RenderDrawPoint(render, x, y);
+							screenData[x * y] = palette[x][y];
 						}
-					}
+					}*/
+
+					//SDL_UpdateTexture(texture, NULL, screenData, 160 * sizeof(Uint16));
+					//SDL_RenderCopy(render, texture, NULL, NULL);
+					SDL_RenderPresent(render);
 				}
 				else {
 					mode = 2;
@@ -165,7 +205,7 @@ void GPU::step(CPU *gameboy, MMU *mmu, SDL_Renderer* render, SDL_Texture *textur
 
 				//Write a line to framebuffer based in the VRAM
 				//TODO: Write a function that does this
-				renderScan(mmu);
+				renderScan(mmu, render);
 			}
 			break;
 	}
