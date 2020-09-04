@@ -107,7 +107,7 @@ void runApp() {
 
 
 			//SDL_RenderCopy(render, textureFramebuffer, NULL, NULL);
-			SDL_RenderPresent(render);
+			//SDL_RenderPresent(render);
 			//drawMMU(mmuValues);
 			//drawFlags(flagState, reg, &gpu, &gameboy);
 
