@@ -35,7 +35,7 @@ public:
 	bool bgUsed(MMU *mmu);
 
 	//Render scan
-	void renderScanBackground(MMU *mmu, uint8_t currentLine);
+	void renderBackground(MMU *mmu, uint8_t currentLine);
 
 	//Draw the framebuffer into screen
 	void DrawScreen(MMU* mmu);
