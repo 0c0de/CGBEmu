@@ -1,6 +1,2 @@
 ﻿  GPU.cpp
-c:\users\josel\cgbemu\cgbemu\gpu.cpp(70): warning C4244: 'argumento': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
-c:\users\josel\cgbemu\cgbemu\gpu.cpp(76): warning C4244: 'argumento': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
-c:\users\josel\cgbemu\cgbemu\gpu.cpp(83): warning C4244: 'argumento': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
-c:\users\josel\cgbemu\cgbemu\gpu.cpp(90): warning C4244: 'argumento': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
   CGBEmu.vcxproj -> C:\Users\josel\CGBEmu\Debug\CGBEmu.exe

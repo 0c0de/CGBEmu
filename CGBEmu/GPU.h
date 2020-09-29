@@ -15,7 +15,9 @@ public:
 	uint8_t line = 0x0;
 
 	//Palette of colours
-	uint16_t palette[160][144] ;
+	int palette[160][8][8];
+
+	int framebuffer[160 * 144 * 4];
 
 	//Steps of the GPU
 	void step(CPU *gameboy, MMU *mmu, SDL_Renderer* render, SDL_Texture *texture);
@@ -32,11 +34,19 @@ public:
 	//Get BGMap to be used
 	bool bgUsed(MMU *mmu);
 
-	//Render scan
-	void renderScan(MMU *mmu, SDL_Renderer *render);
+	void renderBackground(MMU *mmu);
 
 	//Draw the framebuffer into screen
 	void DrawScreen(MMU* mmu);
+
+	//Can enable screen?
+	bool isScreenEnabled(MMU* mmu);
+
+	//Internal way to track vram
+	void updateVRAM(MMU* mmu);
+
+	//Draw the scanline
+	void DrawScanline(MMU* mmu);
 
 private:
 	bool isKthBitSet(uint8_t n, uint8_t k);
