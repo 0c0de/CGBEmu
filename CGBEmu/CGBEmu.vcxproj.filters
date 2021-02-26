@@ -45,6 +45,9 @@
     <ClCompile Include="GPU.cpp">
       <Filter>Archivos de origen</Filter>
     </ClCompile>
+    <ClCompile Include="Interrupts.cpp">
+      <Filter>Archivos de origen</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CPU.h">
@@ -84,6 +87,9 @@
       <Filter>Archivos de encabezado</Filter>
     </ClInclude>
     <ClInclude Include="GPU.h">
+      <Filter>Archivos de encabezado</Filter>
+    </ClInclude>
+    <ClInclude Include="Interrupts.h">
       <Filter>Archivos de encabezado</Filter>
     </ClInclude>
   </ItemGroup>

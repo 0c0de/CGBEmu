@@ -90,4 +90,6 @@ class MMU {
 
 	private:
 		bool isInBIOS = false;
+
+		void DMATransfer(uint8_t data);
 };

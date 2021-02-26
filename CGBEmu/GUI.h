@@ -8,11 +8,11 @@
 #include <sstream>
 #include <SDL.h>
 #include "CPU.h"
-#include "GPU.H"
+#include "GPU.h"
 #include "imgui_memory_editor.h"
 
 void drawMMU(MMU *mmu);
 
 void drawFlags(GameboyFlags *flags, GameboyRegisters *reg, GPU *gpu, CPU *gameboy);
 
-void drawGame(SDL_Texture* gameTexture);
+void drawGame(GLuint gameTexture);

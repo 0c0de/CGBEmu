@@ -6,28 +6,37 @@
 #include <fstream>
 #include <thread>
 #include <SDL.h>
+#include <vector>
+#include "GPU.h"
 using namespace std;
 //CPU is similar to Z80 but with modified instructions
+
 class CPU {
 
 public:
-	//IME(Interrupt Master Enable) disabled by DI, enabled by EI
-	bool IME;
 
 	//Count cicles for keep games at the same speed
 	uint16_t cicles;
 
 	//Program counter of gameboy
 	uint16_t pc;
+
+
+	//IME(Interrupt Master Enable) disabled by DI, enabled by EI
+	bool IME;
+
+
+	bool isHalted = false;
 	
 	//Screen bidimensional array
 	uint16_t gfx[160][144];
+
 
 	void loadGame(const char* path);
 
 	void runLife();
 
-	void runCPU();
+	void runCPU(GPU *gpu, SDL_Renderer *render);
 
 	void loadBIOS();
 
@@ -42,6 +51,16 @@ public:
 	GameboyFlags *getFlagState();
 
 	GameboyRegisters *getGameboyRegisters();
+
+	//Request an interrupt
+	void requestInterrupt(MMU *mmu, uint8_t id);
+
+	//Will check if any Interrupt is enabled
+	void checkForInterrupts(MMU *mmu);
+
+	//Will handle every 4 interrupts: V-sync, LCD, Timer, Joypad
+	//Addresses are: 0x40, 0x48, 0x50, 0x60 respectively
+	void doInterrupt(MMU *mmu, uint8_t bitToSearch);
 
 private:
 
@@ -281,6 +300,11 @@ private:
 	//Jump to address NN
 	void JP_NN(uint16_t opcode);
 
+
+	//JP NN
+	//Jump to address NN if condition applies
+	void JP_CC_NN(uint16_t opcode);
+
 	//JP CC, NN
 	//Jump if condition is true
 	void JR_CC_NN(uint16_t opcode);
@@ -300,6 +324,14 @@ private:
 	//Calls
 	//Push address of next instruction to stack and then jump to address NN
 	void CALL_NN(uint16_t opcode);
+
+	//Call address n if following condition is true:
+	//	- cc = NZ, Call if Z flag is reset.
+	//	- cc = Z, Call if Z flag is set.
+	//	- cc = NC, Call if C flag is reset.
+	//	- cc = C, Call if C flag is set.
+
+	void CALL_CC_NN(uint16_t opcode);
 
 	//Same of CALL NN but if condition is true
 	void CALL_CC_N(uint16_t opcode);
@@ -326,4 +358,8 @@ private:
 	//SWAP n CB Opcode
 	//Swap upper & lower nibles of n.
 	void CB_SWAP_N(uint16_t opcode);
+	
+	//BIT b, r
+	//Test bit b in register r.
+	void BIT(uint16_t opcode);
 };

@@ -124,7 +124,7 @@ void drawFlags(GameboyFlags *flags, GameboyRegisters *reg, GPU *gpu, CPU *gamebo
 
 	ImGui::Spacing();
 
-	ImGui::Text("PC: ", gameboy->pc);
+	ImGui::Text("PC: %02x ", static_cast<unsigned>(gameboy->pc));
 
 	ImGui::Spacing();
 
@@ -164,14 +164,17 @@ void drawFlags(GameboyFlags *flags, GameboyRegisters *reg, GPU *gpu, CPU *gamebo
 
 	ImGui::BeginGroup();
 	ImGui::Text("Palette");
-	Palette.DrawContents((void*)(gpu->palette), 160 * 144);
+	Palette.DrawContents((void*)(gpu->framebuffer), 160 * 144);
 	ImGui::EndGroup();
 	
 	ImGui::End();
 }
 
-void drawGame(SDL_Texture* gameTexture) {
+void drawGame(GLuint gameTexture) {
 	ImGui::Begin("Gameboy DMG", &isActiveGame, ImGuiWindowFlags_AlwaysAutoResize);
-	//ImGui::Image()
+	ImGui::Text("Game emulated :)");
+	ImGui::Text("pointer = %p", gameTexture);
+	ImGui::Image((void*)(intptr_t)gameTexture, ImVec2(160, 144));
+	ImGui::End();
 
 }

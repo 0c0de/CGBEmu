@@ -1,16 +1,20 @@
 #include "CPU.h"
-#include "mmu.h"
-#include "GUI.h"
 
 MMU mmu;
+Interrupt interrupt;
 GameboyRegisters reg;
 GameboyFlags flags;
 
 
 uint8_t registerF = 0x00;
 
+int MAXCYCLES = 70224;
+float FPS = 59.73f;
+float DELAY_TIME = 1000.0f / FPS;
+
 void CPU::init() {
 	pc = 0x100;
+	//pc = 0x0;
 	mmu.setRegisters16Bit(&reg, "AF", 0x01B0);
 	mmu.setRegisters16Bit(&reg, "BC", 0x0013);
 	mmu.setRegisters16Bit(&reg, "DE", 0x00D8);
@@ -18,7 +22,7 @@ void CPU::init() {
 
 	mmu.sp = 0xE000;
 
-	mmu.write8(0xFF00, 0xCF);
+	mmu.write8(0xFF00, 0x00);
 	mmu.write8(0xFF05, 0x00);
 	mmu.write8(0xFF06, 0x00);
 	mmu.write8(0xFF07, 0x00);
@@ -59,243 +63,345 @@ uint8_t swapNibbles(uint8_t x)
 
 void CPU::addCycles(int ciclesToAdd) {
 	cicles += ciclesToAdd;
+	//std::cout << static_cast<unsigned>(cicles) << std::endl;
 }
 
 void CPU::clearCycles() {
 	cicles = 0;
 }
 
+bool isKthBitSet(int n, int k)
+{
+	if (n & (1 << (k - 1))) {
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
 MMU *CPU::getMMUValues() {
 	return &mmu;
 }
 
-void CPU::runCPU() {
+void CPU::runCPU(GPU *gpu, SDL_Renderer *render) {
 	uint8_t cb_opcode;
 	uint8_t opcode;
+	bool isSlow = false;
 	bool isRuning = true;
+	clearCycles();
 	while (isRuning)
 	{
-		opcode = mmu.read8(pc);
+		if (cicles < MAXCYCLES) {
 
-		//Set the flags 
-		if (flags.Z) {
-			mmu.setRegisters8Bit(&reg, "F", registerF |= (1 << 7));
-		}
-		else {
-			mmu.setRegisters8Bit(&reg, "F", registerF &= ~(1 << 7));
-		}
+			if (isHalted) {
+				interrupt.checkForInterrupts(&mmu, &isHalted, &IME, &pc);
+			}
+			else {
+				interrupt.checkForInterrupts(&mmu, &isHalted, &IME, &pc);
+				opcode = mmu.read8(pc);
+				//std::cout << "Opcode: " << std::hex << static_cast<unsigned>(opcode) << std::endl;
 
-		if (flags.N) {
-			mmu.setRegisters8Bit(&reg, "F", registerF |= (1 << 6));
-		}
-		else {
-			mmu.setRegisters8Bit(&reg, "F", registerF &= ~(1 << 6));
-		}
+				//Set the flags 
+				if (flags.Z) {
+					mmu.setRegisters8Bit(&reg, "F", registerF |= (1 << 7));
+				}
+				else {
+					mmu.setRegisters8Bit(&reg, "F", registerF &= ~(1 << 7));
+				}
 
-		if (flags.H) {
-			mmu.setRegisters8Bit(&reg, "F", registerF |= (1 << 5));
-		}
-		else {
-			mmu.setRegisters8Bit(&reg, "F", registerF &= ~(1 << 5));
-		}
+				if (flags.N) {
+					mmu.setRegisters8Bit(&reg, "F", registerF |= (1 << 6));
+				}
+				else {
+					mmu.setRegisters8Bit(&reg, "F", registerF &= ~(1 << 6));
+				}
 
-		if (flags.C) {
-			mmu.setRegisters8Bit(&reg, "F", registerF |= (1 << 4));
-		}
-		else {
-			mmu.setRegisters8Bit(&reg, "F", registerF &= ~(1 << 4));
-		}
+				if (flags.H) {
+					mmu.setRegisters8Bit(&reg, "F", registerF |= (1 << 5));
+				}
+				else {
+					mmu.setRegisters8Bit(&reg, "F", registerF &= ~(1 << 5));
+				}
 
-		/*if (pc == 0x33) {
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Gameboy Emulator C++", "Breakpoint reached please look gui", NULL);
-			cout << "BREAKPOINT!!!! PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
-		}
+				if (flags.C) {
+					mmu.setRegisters8Bit(&reg, "F", registerF |= (1 << 4));
+				}
+				else {
+					mmu.setRegisters8Bit(&reg, "F", registerF &= ~(1 << 4));
+				}
 
-		if (pc == 0x27CE) {
-			cout << "BREAKPOINT!!!! PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Gameboy Emulator C++", "Breakpoint reached please look gui", NULL);
-		}
+				/*if (pc == 0x29B0) {
+					//SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Gameboy Emulator C++", "Patch Tetris Aplied", NULL);
+					cout << "PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
+					mmu.write8(0xFF00, 0x00);
+					//isSlow = true;
+				}
 
-		if (pc == 0x27D0) {
-			cout << "BREAKPOINT!!!! PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Gameboy Emulator C++", "Breakpoint reached please look gui", NULL);
-		}*/
+				if (pc == 0x29BC) {
+					//SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Gameboy Emulator C++", "Patch Tetris Aplied", NULL);
+					cout << "PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
+					mmu.write8(0xFF00, 0x00);
+					//isSlow = true;
+				}
 
-		/*if (pc == 0x2824) {
-			cout << "BREAKPOINT!!!! PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Gameboy Emulator C++", "Breakpoint reached please look gui", NULL);
-		}
+				if (pc == 0x02cd) {
+					//SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Gameboy Emulator C++", "Patch Tetris Aplied", NULL);
+					cout << "PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
+					mmu.write8(0xFF00, 0x00);
+					//isSlow = true;
+				}*/
+				
+				/*if (pc == 0x6aa5) {
+					SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Gameboy Emulator C++", "Breakpoint reached please look gui", NULL);
+					cout << "PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
+					isSlow = true;
+				}
 
-		if (pc == 0x2826) {
-			cout << "BREAKPOINT!!!! PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Gameboy Emulator C++", "Breakpoint reached please look gui", NULL);
-		}*/
-		/*
-		if (pc == 0x2E) {
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Gameboy Emulator C++", "Breakpoint reached please look gui", NULL);
-			cout << "PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
-		}*/
+				if (pc == 0x650f) {
+					SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Gameboy Emulator C++", "Breakpoint reached please look gui", NULL);
+					cout << "PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
+					isSlow = true;
+				}
 
-		switch (opcode) {
-		case 0x00:
-			NOP();
-			break;
-		case 0x7F: case 0x78: case 0x79: case 0x7A: case 0x7B: case 0x7C: case 0x7D: case 0x7E:
-		case 0x40: case 0x41: case 0x42: case 0x43: case 0x44: case 0x45: case 0x46: case 0x48:
-		case 0x49: case 0x4A: case 0x4B: case 0x4C: case 0x4D: case 0x4E: case 0x50: case 0x51:
-		case 0x52: case 0x53: case 0x54: case 0x55: case 0x56: case 0x58: case 0x59: case 0x36:
-		case 0x5A: case 0x5B: case 0x5C: case 0x5D: case 0x5E: case 0x60: case 0x61: case 0x62:
-		case 0x63: case 0x64: case 0x65: case 0x66: case 0x68: case 0x69: case 0x6A: case 0x6B:
-		case 0x6C: case 0x6D: case 0x6E: case 0x70: case 0x71: case 0x72: case 0x73: case 0x74:
-		case 0x75:
-			LD_r1_r2(opcode);
-			break;
-		case 0x06: case 0x0E: case 0x16: case 0x1E: case 0x26: case 0x2E:
-			LD_NN_N(opcode);
-			break;
-		case 0x0A: case 0x1A: case 0x3E: case 0xFA:
-			LD_A_N(opcode);
-			break;
-		case 0x47: case 0x4F: case 0x57: case 0x5F: case 0x67: case 0x6F: case 0x02: case 0x12:
-		case 0x77: case 0xEA:
-			LD_N_A(opcode);
-			break;
-		case 0xC3:
-			JP_NN(opcode);
-			break;
-		case 0xF3:
-			DI();
-			break;
-		case 0xFB:
-			EI();
-			break;
-		case 0xCD:
-			CALL_NN(opcode);
-			break;
-		case 0xFE: case 0xBF: case 0xB8: case 0xB9: case 0xBA: case 0xBB: case 0xBC: case 0xBD: case 0xBE:
-			CP_N(opcode);
-			break;
-		case 0x20: case 0x28: case 0x30: case 0x38:
-			JR_CC_N(opcode);
-			break;
-		case 0xE9:
-			JP_regHL();
-			break;
-		case 0x01: case 0x11: case 0x21: case 0x31:
-			LD_N_NN(opcode);
-			break;
-		case 0x2a:
-			LDI_A_regHL();
-			break;
-		case 0x22:
-			LDI_regHL_A();
-			break;
-		case 0x3c: case 0x34: case 0x04: case 0x0c: case 0x14: case 0x1c: case 0x24: case 0x2c:
-			INC_N(opcode);
-			break;
-		case 0x3d: case 0x35: case 0x05: case 0x0d: case 0x15: case 0x1d: case 0x25: case 0x2d:
-			DEC_N(opcode);
-			break;
-		case 0xc9:
-			RET();
-			break;
-		case 0xF0:
-			LDH_A_N();
-			//std::cout << "LDH A, N  -> PC: " << hex << static_cast<unsigned>(pc) << std::endl;
-			break;
-		case 0xE0:
-			LDH_N_A();
-			//std::cout << "LDH A, N  -> PC: " << hex << static_cast<unsigned>(pc) << std::endl;
-			break;
-		case 0x3A:
-			LDD_A_regHL();
-			break;
-		case 0x32:
-			LDD_regHL_A();
-			break;
-		case 0xAF: case 0xA8: case 0xA9: case 0xAA: case 0xAB: case 0xAC: case 0xAD: case 0xAE: case 0xEE:
-			XOR_N(opcode);
-			break;
-		case 0xB0: case 0xB1: case 0xB2: case 0xB3: case 0xB4: case 0xB5: case 0xB6: case 0xB7: case 0xF6:
-			OR_N(opcode);
-			break;
-		case 0xA0: case 0xA1: case 0xA2: case 0xA3: case 0xA4: case 0xA5: case 0xA6: case 0xA7: case 0xE6:
-			AND_N(opcode);
-			break;
-		case 0xC7: case 0xCF: case 0xD7: case 0xDF: case 0xE7: case 0xEF: case 0xF7: case 0xFF:
-			RST_N(opcode);
-			break;
-		case 0xE2:
-			LD_regC_A();
-			break;
-		case 0x0B: case 0x1B: case 0x2B: case 0x3B:
-			DEC_NN(opcode);
-			break;
-		case 0x2F:
-			CPL();
-			break;
-		case 0x80: case 0x81: case 0x82: case 0x83: case 0x84: case 0x85: case 0x86: case 0x87: case 0xC6:
-			ADD_A_N(opcode);
-			break;
-		case 0x88: case 0x89: case 0x8A: case 0x8B: case 0x8C: case 0x8D: case 0x8E: case 0x8F: case 0xCE:
-			ADC_A_N(opcode);
-			break;
-		case 0xF1: case 0xD1: case 0xC1: case 0xE1:
-			POP_NN(opcode);
-			break;
-		case 0xF5: case 0xD5: case 0xC5: case 0xE5:
-			PUSH_NN(opcode);
-			break;
-		case 0xF9:
-			LD_SP_HL();
-			break;
-		case 0x08:
-			LD_NN_SP();
-			break;
-		case 0x09: case 0x19: case 0x29: case 0x39:
-			ADD_HL_N(opcode);
-			break;
-		case 0xE8:
-			ADD_SP_N();
-			break;
-		case 0x03: case 0x13: case 0x23: case 0x33:
-			INC_NN(opcode);
-			break;
-		case 0xCB:
-			cb_opcode = mmu.read8(pc + 1);
-			switch (cb_opcode)
-			{
-				case 0x30: case 0x31: case 0x32: case 0x33: case 0x34: case 0x35: case 0x36: case 0x37:
-					CB_SWAP_N(cb_opcode);
+				if (pc == 0x651f) {
+					SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Gameboy Emulator C++", "Breakpoint reached please look gui", NULL);
+					cout << "PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
+					isSlow = true;
+				}
+
+				if (pc == 0x6520) {
+					SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Gameboy Emulator C++", "Breakpoint reached please look gui", NULL);
+					cout << "PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
+					isSlow = true;
+				}
+
+				if (pc == 0x6521) {
+					SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Gameboy Emulator C++", "Breakpoint reached please look gui", NULL);
+					cout << "PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
+					isSlow = true;
+				}
+
+				if (pc == 0x6522) {
+					SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Gameboy Emulator C++", "Breakpoint reached please look gui", NULL);
+					cout << "PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
+					isSlow = true;
+				}
+
+				if (pc == 0x6523) {
+					SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Gameboy Emulator C++", "Breakpoint reached please look gui", NULL);
+					cout << "PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
+					isSlow = true;
+				}
+
+
+				if (pc == 0x6aa7) {
+					SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Gameboy Emulator C++", "Breakpoint reached please look gui", NULL);
+					cout << "PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
+					isSlow = true;
+				}
+
+				if (pc == 0x6a69) {
+					SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Gameboy Emulator C++", "Breakpoint reached please look gui", NULL);
+					cout << "PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
+					isSlow = true;
+				}
+
+				if (pc == 0x6a24) {
+					SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Gameboy Emulator C++", "Breakpoint reached please look gui", NULL);
+					cout << "PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
+					isSlow = true;
+				}*/
+
+
+
+
+				switch (opcode) {
+				case 0x00:
+					NOP();
 					break;
-				case 0x80: case 0x81: case 0x82: case 0x83: case 0x84: case 0x85: case 0x86: case 0x87: case 0x88: case 0x89: case 0x8A: case 0x8B: case 0x8C: case 0x8D: case 0x8E: case 0x8F:
-				case 0x90: case 0x91: case 0x92: case 0x93: case 0x94: case 0x95: case 0x96: case 0x97: case 0x98: case 0x99: case 0x9A: case 0x9B: case 0x9C: case 0x9D: case 0x9E: case 0x9F:
-				case 0xA0: case 0xA1: case 0xA2: case 0xA3: case 0xA4: case 0xA5: case 0xA6: case 0xA7: case 0xA8: case 0xA9: case 0xAA: case 0xAB: case 0xAC: case 0xAD: case 0xAE: case 0xAF:
-				case 0xB0: case 0xB1: case 0xB2: case 0xB3: case 0xB4: case 0xB5: case 0xB6: case 0xB7: case 0xB8: case 0xB9: case 0xBA: case 0xBB: case 0xBC: case 0xBD: case 0xBE: case 0xBF:
-					RES_B_R(cb_opcode);
+				case 0x10:
+					STOP();
+					break;
+				case 0x1F:
+					RRA();
+					break;
+				case 0x7F: case 0x78: case 0x79: case 0x7A: case 0x7B: case 0x7C: case 0x7D: case 0x7E:
+				case 0x40: case 0x41: case 0x42: case 0x43: case 0x44: case 0x45: case 0x46: case 0x48:
+				case 0x49: case 0x4A: case 0x4B: case 0x4C: case 0x4D: case 0x4E: case 0x50: case 0x51:
+				case 0x52: case 0x53: case 0x54: case 0x55: case 0x56: case 0x58: case 0x59: case 0x36:
+				case 0x5A: case 0x5B: case 0x5C: case 0x5D: case 0x5E: case 0x60: case 0x61: case 0x62:
+				case 0x63: case 0x64: case 0x65: case 0x66: case 0x68: case 0x69: case 0x6A: case 0x6B:
+				case 0x6C: case 0x6D: case 0x6E: case 0x70: case 0x71: case 0x72: case 0x73: case 0x74:
+				case 0x75:
+					LD_r1_r2(opcode);
+					break;
+				case 0x06: case 0x0E: case 0x16: case 0x1E: case 0x26: case 0x2E:
+					LD_NN_N(opcode);
+					break;
+				case 0x0A: case 0x1A: case 0x3E: case 0xFA:
+					LD_A_N(opcode);
+					break;
+				case 0x47: case 0x4F: case 0x57: case 0x5F: case 0x67: case 0x6F: case 0x02: case 0x12:
+				case 0x77: case 0xEA:
+					LD_N_A(opcode);
+					break;
+				case 0xC3:
+					JP_NN(opcode);
+					break;
+				case 0xF3:
+					DI();
+					break;
+				case 0xFB:
+					EI();
+					break;
+				case 0xCD:
+					CALL_NN(opcode);
+					break;
+				case 0xC4: case 0xCC: case 0xD4: case 0xDC:
+					CALL_CC_NN(opcode);
+					break;
+				case 0xFE: case 0xBF: case 0xB8: case 0xB9: case 0xBA: case 0xBB: case 0xBC: case 0xBD: case 0xBE:
+					CP_N(opcode);
+					break;
+				case 0x20: case 0x28: case 0x30: case 0x38:
+					JR_CC_N(opcode);
+					break;
+				case 0xCA: case 0xC2: case 0xDA: case 0xD2:
+					JP_CC_NN(opcode);
+					break;
+				case 0xE9:
+					JP_regHL();
+					break;
+				case 0x18:
+					JR_N();
+					break;
+				case 0x01: case 0x11: case 0x21: case 0x31:
+					LD_N_NN(opcode);
+					break;
+				case 0x2a:
+					LDI_A_regHL();
+					break;
+				case 0x22:
+					LDI_regHL_A();
+					break;
+				case 0x3c: case 0x34: case 0x04: case 0x0c: case 0x14: case 0x1c: case 0x24: case 0x2c:
+					INC_N(opcode);
+					break;
+				case 0x3d: case 0x35: case 0x05: case 0x0d: case 0x15: case 0x1d: case 0x25: case 0x2d:
+					DEC_N(opcode);
+					break;
+				case 0xc9:
+					RET();
+					break;
+				case 0xd9:
+					RETI();
+					break;
+				case 0x76:
+					HALT();
+					break;
+				case 0xC0: case 0xC8: case 0xD0: case 0xD8:
+					RET_CC(opcode);
+					break;
+				case 0xF0:
+					LDH_A_N();
+					//std::cout << "LDH A, N  -> PC: " << hex << static_cast<unsigned>(pc) << std::endl;
+					break;
+				case 0xE0:
+					LDH_N_A();
+					//std::cout << "LDH A, N  -> PC: " << hex << static_cast<unsigned>(pc) << std::endl;
+					break;
+				case 0x3A:
+					LDD_A_regHL();
+					break;
+				case 0x32:
+					LDD_regHL_A();
+					break;
+				case 0xAF: case 0xA8: case 0xA9: case 0xAA: case 0xAB: case 0xAC: case 0xAD: case 0xAE: case 0xEE:
+					XOR_N(opcode);
+					break;
+				case 0xB0: case 0xB1: case 0xB2: case 0xB3: case 0xB4: case 0xB5: case 0xB6: case 0xB7: case 0xF6:
+					OR_N(opcode);
+					break;
+				case 0xA0: case 0xA1: case 0xA2: case 0xA3: case 0xA4: case 0xA5: case 0xA6: case 0xA7: case 0xE6:
+					AND_N(opcode);
+					break;
+				case 0xC7: case 0xCF: case 0xD7: case 0xDF: case 0xE7: case 0xEF: case 0xF7: case 0xFF:
+					RST_N(opcode);
+					break;
+				case 0xE2:
+					LD_regC_A();
+					break;
+				case 0x0B: case 0x1B: case 0x2B: case 0x3B:
+					DEC_NN(opcode);
+					break;
+				case 0x2F:
+					CPL();
+					break;
+				case 0x80: case 0x81: case 0x82: case 0x83: case 0x84: case 0x85: case 0x86: case 0x87: case 0xC6:
+					ADD_A_N(opcode);
+					break;
+				case 0x88: case 0x89: case 0x8A: case 0x8B: case 0x8C: case 0x8D: case 0x8E: case 0x8F: case 0xCE:
+					ADC_A_N(opcode);
+					break;
+				case 0xF1: case 0xD1: case 0xC1: case 0xE1:
+					POP_NN(opcode);
+					break;
+				case 0xF5: case 0xD5: case 0xC5: case 0xE5:
+					PUSH_NN(opcode);
+					break;
+				case 0xF9:
+					LD_SP_HL();
+					break;
+				case 0x08:
+					LD_NN_SP();
+					break;
+				case 0x09: case 0x19: case 0x29: case 0x39:
+					ADD_HL_N(opcode);
+					break;
+				case 0xE8:
+					ADD_SP_N();
+					break;
+				case 0x03: case 0x13: case 0x23: case 0x33:
+					INC_NN(opcode);
+					break;
+				case 0xCB:
+					cb_opcode = mmu.read8(pc + 1);
+					switch (cb_opcode)
+					{
+					case 0x30: case 0x31: case 0x32: case 0x33: case 0x34: case 0x35: case 0x36: case 0x37:
+						CB_SWAP_N(cb_opcode);
+						break;
+					case 0x80: case 0x81: case 0x82: case 0x83: case 0x84: case 0x85: case 0x86: case 0x87: case 0x88: case 0x89: case 0x8A: case 0x8B: case 0x8C: case 0x8D: case 0x8E: case 0x8F:
+					case 0x90: case 0x91: case 0x92: case 0x93: case 0x94: case 0x95: case 0x96: case 0x97: case 0x98: case 0x99: case 0x9A: case 0x9B: case 0x9C: case 0x9D: case 0x9E: case 0x9F:
+					case 0xA0: case 0xA1: case 0xA2: case 0xA3: case 0xA4: case 0xA5: case 0xA6: case 0xA7: case 0xA8: case 0xA9: case 0xAA: case 0xAB: case 0xAC: case 0xAD: case 0xAE: case 0xAF:
+					case 0xB0: case 0xB1: case 0xB2: case 0xB3: case 0xB4: case 0xB5: case 0xB6: case 0xB7: case 0xB8: case 0xB9: case 0xBA: case 0xBB: case 0xBC: case 0xBD: case 0xBE: case 0xBF:
+						RES_B_R(cb_opcode);
+						break;
+					default:
+						cout << "Opcode CB " << hex << static_cast<unsigned>(cb_opcode) << " not implemented, PC: " << hex << static_cast<unsigned>(pc) << endl;
+						isRuning = false;
+						break;
+					}
 					break;
 				default:
-					cout << "Opcode CB " << hex << static_cast<unsigned>(cb_opcode) << " not implemented, PC: " << hex << static_cast<unsigned>(pc) << endl;
+					cout << "Opcode: " << hex << static_cast<unsigned>(opcode) << " not implemented, PC: " << hex << static_cast<unsigned>(pc) << endl;
 					isRuning = false;
 					break;
+				}
+
+				if (isSlow) {
+					SDL_Delay(100);
+				}
+
 			}
-			break;
-		default:
-			cout << "Opcode: " << hex << static_cast<unsigned>(opcode) << " not implemented, PC: " << hex << static_cast<unsigned>(pc) << endl;
-			isRuning = false;
-			break;
+				//getchar();
+
+			gpu->step(cicles, &mmu, render, &interrupt);
 		}
-	}
-
-	getchar();
-}
-
-bool isKthBitSet(int n, int k)
-{
-	if (n & (1 << (k - 1))){
-		return true;
-	}else {
-		return false;
+		else {
+		clearCycles();
+		}
 	}
 }
 
@@ -325,12 +431,122 @@ bool CPU::isHalfCarry16Bit(uint16_t a, uint16_t b, std::string type) {
 	}
 }
 
+void CPU::HALT() {
+	isHalted = true;
+	addCycles(4);
+}
+
+void CPU::BIT(uint16_t opcode) {
+	switch (opcode)
+	{
+	case 0x47:
+		break;
+	case 0x41:
+		break;
+	case 0x42:
+		break;
+	case 0x43:
+		break;
+	case 0x44:
+		break;
+	case 0x45:
+		break;
+	case 0x46:
+		break;
+	default:
+		break;
+	}
+}
+
+void CPU::JP_CC_NN(uint16_t opcode) {
+	uint16_t nextAddress = mmu.read(pc + 1);
+	switch (opcode)
+	{
+		case 0xCA:
+			if (flags.Z) {
+				pc = nextAddress;
+			}
+			else {
+				pc += 3;
+			}
+
+			addCycles(12);
+			break;
+
+		case 0xC2:
+			if (!flags.Z) {
+				pc = nextAddress;
+			}
+			else {
+				pc += 3;
+			}
+			addCycles(12);
+			break;
+
+		case 0xDA:
+			if (flags.C) {
+				pc = nextAddress;
+			}
+			else {
+				pc += 3;
+			}
+			addCycles(12);
+			break;
+
+		case 0xD2:
+			if (!flags.C) {
+				pc = nextAddress;
+			}
+			else {
+				pc += 3;
+			}
+			addCycles(12);
+			break;
+	default:
+		break;
+	}
+}
+
+void CPU::JR_N() {
+	int8_t n = mmu.read8(pc + 1);
+	//uint16_t nextAddress = pc - (0xff - n) - 1;
+	uint16_t nextAddress = pc + n + 2;
+	//pc += 2;
+
+	std::cout << std::hex << "Next address: " << static_cast<unsigned>(nextAddress) << std::endl;
+	pc = nextAddress;
+	addCycles(8);
+}
+
+void CPU::RRA() {
+	uint8_t regA = reg.A;
+	uint8_t a = regA >> 1;
+	uint8_t b = regA << 7;
+	uint8_t resultRotate = a | b;
+
+	flags.Z = resultRotate == 0 ? true : false;
+	flags.C = isKthBitSet(a, 1) ? true : false;
+	flags.H = false;
+	flags.N = false;
+
+	addCycles(4);
+	pc++;
+}
+
 void CPU::RET() {
-	uint16_t addrPoped;
+	uint16_t addrPoped = 0;
 	mmu.pop(&addrPoped);
-	std::cout << "RET, Address poped: " << hex << addrPoped << std::endl;
+	std::cout << "ADDR POPPED: " << std::hex << static_cast<unsigned>(addrPoped) << std::endl;
 	addCycles(8);
 	pc = addrPoped;
+}
+
+void CPU::RETI() {
+	uint16_t addrPoped;
+	mmu.pop(&addrPoped);
+	addCycles(8);
+	pc = addrPoped;
+	IME = true;
 }
 
 void CPU::LDD_A_regHL() {
@@ -346,6 +562,11 @@ void CPU::LDD_regHL_A() {
 	mmu.setRegisters16Bit(&reg, "HL", reg.HL - 1);
 	addCycles(8);
 	pc++;
+}
+
+void CPU::STOP() {
+	pc+=2;
+	addCycles(4);
 }
 
 void CPU::XOR_N(uint16_t opcode) {
@@ -805,6 +1026,7 @@ void CPU::LD_NN_N(uint16_t opcode) {
 }
 
 void CPU::LD_r1_r2(uint16_t opcode) {
+	uint8_t n = mmu.read8(pc + 1);
 	switch (opcode)
 	{
 	case 0x7F:
@@ -1138,9 +1360,9 @@ void CPU::LD_r1_r2(uint16_t opcode) {
 		pc += 1;
 		break;
 	case 0x36:
-		mmu.write8(reg.HL, reg.B);
+		mmu.write8(reg.HL, n);
 		addCycles(12);
-		pc += 1;
+		pc += 2;
 		break;
 	default:
 		pc += 1;
@@ -1327,6 +1549,70 @@ void CPU::EI() {
 	pc++;
 }
 
+void CPU::CALL_CC_NN(uint16_t opcode) {
+	switch (opcode)
+	{
+	case 0xC4:
+		if (!flags.Z) {
+			uint16_t nn = mmu.read(pc + 1);
+			//cout << "CALL, " << static_cast<unsigned>(nn) << "h" << endl;
+			mmu.push(pc + 3);
+			//std::cout << "CALL, " << hex << nn << "h, PC: " << hex << static_cast<unsigned>(pc) << std::endl;
+			pc = nn;
+			addCycles(12);
+		}
+		else {
+			pc += 3;
+		}
+		break;
+
+	case 0xCC:
+		if (flags.Z) {
+			uint16_t nn = mmu.read(pc + 1);
+			//cout << "CALL, " << static_cast<unsigned>(nn) << "h" << endl;
+			mmu.push(pc + 3);
+			//std::cout << "CALL, " << hex << nn << "h, PC: " << hex << static_cast<unsigned>(pc) << std::endl;
+			pc = nn;
+			addCycles(12);
+		}
+		else {
+			pc += 3;
+		}
+		break;
+
+	case 0xD4:
+		if (!flags.C) {
+			uint16_t nn = mmu.read(pc + 1);
+			//cout << "CALL, " << static_cast<unsigned>(nn) << "h" << endl;
+			mmu.push(pc + 3);
+			//std::cout << "CALL, " << hex << nn << "h, PC: " << hex << static_cast<unsigned>(pc) << std::endl;
+			pc = nn;
+			addCycles(12);
+		}
+		else {
+			pc += 3;
+		}
+		break;
+
+	case 0xDC:
+		if (flags.C) {
+			uint16_t nn = mmu.read(pc + 1);
+			//cout << "CALL, " << static_cast<unsigned>(nn) << "h" << endl;
+			mmu.push(pc + 3);
+			//std::cout << "CALL, " << hex << nn << "h, PC: " << hex << static_cast<unsigned>(pc) << std::endl;
+			pc = nn;
+			addCycles(12);
+		}
+		else {
+			pc += 3;
+		}
+		break;
+
+	default:
+		break;
+	}
+}
+
 void CPU::CALL_NN(uint16_t opcode) {
 	uint16_t nn = mmu.read(pc+1);
 	//cout << "CALL, " << static_cast<unsigned>(nn) << "h" << endl;
@@ -1347,7 +1633,7 @@ void CPU::LDH_N_A() {
 void CPU::LDH_A_N() {
 	uint8_t n = mmu.read8(pc + 1);
 	uint16_t memoryAdress = 0xFF00 + n;
-	//std::cout << "LDH " << hex << static_cast<unsigned>(reg.A) << ", (" << hex << static_cast<unsigned>(memoryAdress) << "h)" << std::endl;
+	//std::cout << "LDH A," << hex << " (" << hex << static_cast<unsigned>(memoryAdress) << "h) so A will be " << static_cast<unsigned>(mmu.read8(memoryAdress))<< std::endl;
 	mmu.setRegisters8Bit(&reg, "A", mmu.read8(memoryAdress)); 
 	addCycles(12);
 	pc += 2;
@@ -1369,7 +1655,7 @@ void CPU::CP_N(uint16_t opcode) {
 
 		flags.N = true;
 
-		if (reg.A > n) {
+		if (reg.A < n) {
 			flags.C = true;
 		}
 		else {
@@ -1398,7 +1684,7 @@ void CPU::CP_N(uint16_t opcode) {
 
 		flags.N = true;
 
-		if (reg.A > n) {
+		if (reg.A < n) {
 			flags.C = true;
 		}
 		else {
@@ -1426,7 +1712,7 @@ void CPU::CP_N(uint16_t opcode) {
 
 		flags.N = true;
 
-		if (reg.A > n) {
+		if (reg.A < n) {
 			flags.C = true;
 		}
 		else {
@@ -1454,7 +1740,7 @@ void CPU::CP_N(uint16_t opcode) {
 
 		flags.N = true;
 
-		if (reg.A > n) {
+		if (reg.A < n) {
 			flags.C = true;
 		}
 		else {
@@ -1482,7 +1768,7 @@ void CPU::CP_N(uint16_t opcode) {
 
 		flags.N = true;
 
-		if (reg.A > n) {
+		if (reg.A < n) {
 			flags.C = true;
 		}
 		else {
@@ -1510,7 +1796,7 @@ void CPU::CP_N(uint16_t opcode) {
 
 		flags.N = true;
 
-		if (reg.A > n) {
+		if (reg.A < n) {
 			flags.C = true;
 		}
 		else {
@@ -1538,7 +1824,7 @@ void CPU::CP_N(uint16_t opcode) {
 
 		flags.N = true;
 
-		if (reg.A > n) {
+		if (reg.A < n) {
 			flags.C = true;
 		}
 		else {
@@ -1566,7 +1852,7 @@ void CPU::CP_N(uint16_t opcode) {
 
 		flags.N = true;
 
-		if (reg.A > n) {
+		if (reg.A < n) {
 			flags.C = true;
 		}
 		else {
@@ -1594,7 +1880,7 @@ void CPU::CP_N(uint16_t opcode) {
 
 		flags.N = true;
 
-		if (reg.A > nn) {
+		if (reg.A < nn) {
 			flags.C = true;
 		}
 		else {
@@ -1618,15 +1904,20 @@ void CPU::CP_N(uint16_t opcode) {
 }
 
 void CPU::JR_CC_N(uint16_t opcode) {
-	uint8_t n = mmu.read8(pc+1);
+	int8_t n = mmu.read8(pc+1); 
+	uint16_t nextAddress = pc + n + 2;
+	//uint16_t nextAddress = pc - (0xFF - n) - 1;
 	switch (opcode) {
 		//JR NZ, N
 	case 0x20:
 		//std::cout << "Flag Z when calling JR NZ " << flags.Z << std::endl;
-			pc += 2;
 			if (!flags.Z) {
-				pc = pc - (0xff - n) - 1;
+
+				pc = nextAddress;
 				//std::cout << "PC: " << pc << endl;
+			}
+			else {
+				pc += 2;
 			}
 			//cout << "JR NZ, " << hex << pc << endl;
 			addCycles(8);
@@ -1634,19 +1925,23 @@ void CPU::JR_CC_N(uint16_t opcode) {
 		break;
 		//JR Z, N
 	case 0x28: 
-			pc += 2;
 			if (flags.Z) {
-				pc = pc - (0xff - n) - 1;
+				pc = nextAddress;
+			}
+			else {
+				pc += 2;
 			}
 			addCycles(8);
-			//cout << "JR Z, " << hex << pc << endl;
+			cout << "JR Z, " << hex << pc << endl;
 		
 		break;
 		//JR NC, N
 	case 0x30: 
-			pc += 2;
 			if (!flags.C) {
-				pc = pc - (0xff - n) - 1;
+				pc = nextAddress;
+			}
+			else {
+				pc += 2;
 			}
 			addCycles(8);
 			//cout << "JR NC, " << hex << pc << endl;
@@ -1654,9 +1949,11 @@ void CPU::JR_CC_N(uint16_t opcode) {
 		break;
 		//JR C, N
 	case 0x38: 
-			pc += 2;
 			if (flags.C) {
-				pc = pc - (0xff - n) - 1;
+				pc = nextAddress;
+			}
+			else {
+				pc += 2;
 			}
 			addCycles(8);
 			//cout << "JR C, " << hex << pc << endl;
@@ -2075,8 +2372,7 @@ void CPU::DEC_NN(uint16_t opcode) {
 
 void CPU::CPL() {
 	uint8_t registerA = reg.A;
-	std::bitset<8> bitToFlip(registerA);
-	uint8_t regAFlipped = (uint8_t)bitToFlip.flip().to_ulong();
+	uint8_t regAFlipped = ~registerA;
 	mmu.setRegisters8Bit(&reg, "A", regAFlipped);	
 	addCycles(4);
 	flags.N = true;
@@ -2097,7 +2393,7 @@ void CPU::CB_SWAP_N(uint16_t opcode) {
 			swappedNibles = swapNibbles(reg.A);
 			mmu.setRegisters8Bit(&reg, "A", swappedNibles);
 			if (swappedNibles == 0) {
-				flags.N = true;
+				flags.Z = true;
 			}
 			else {
 				flags.Z = false;
@@ -2109,7 +2405,7 @@ void CPU::CB_SWAP_N(uint16_t opcode) {
 			swappedNibles = swapNibbles(reg.B);
 			mmu.setRegisters8Bit(&reg, "B", swappedNibles);
 			if (swappedNibles == 0) {
-				flags.N = true;
+				flags.Z = true;
 			}
 			else {
 				flags.Z = false;
@@ -2121,7 +2417,7 @@ void CPU::CB_SWAP_N(uint16_t opcode) {
 			swappedNibles = swapNibbles(reg.C);
 			mmu.setRegisters8Bit(&reg, "C", swappedNibles);
 			if (swappedNibles == 0) {
-				flags.N = true;
+				flags.Z = true;
 			}
 			else {
 				flags.Z = false;
@@ -2133,7 +2429,7 @@ void CPU::CB_SWAP_N(uint16_t opcode) {
 			swappedNibles = swapNibbles(reg.D);
 			mmu.setRegisters8Bit(&reg, "D", swappedNibles);
 			if (swappedNibles == 0) {
-				flags.N = true;
+				flags.Z = true;
 			}
 			else {
 				flags.Z = false;
@@ -2145,7 +2441,7 @@ void CPU::CB_SWAP_N(uint16_t opcode) {
 			swappedNibles = swapNibbles(reg.E);
 			mmu.setRegisters8Bit(&reg, "E", swappedNibles);
 			if (swappedNibles == 0) {
-				flags.N = true;
+				flags.Z = true;
 			}
 			else {
 				flags.Z = false;
@@ -2157,7 +2453,7 @@ void CPU::CB_SWAP_N(uint16_t opcode) {
 			swappedNibles = swapNibbles(reg.H);
 			mmu.setRegisters8Bit(&reg, "H", swappedNibles);
 			if (swappedNibles == 0) {
-				flags.N = true;
+				flags.Z = true;
 			}
 			else {
 				flags.Z = false;
@@ -2169,7 +2465,7 @@ void CPU::CB_SWAP_N(uint16_t opcode) {
 			swappedNibles = swapNibbles(reg.L);
 			mmu.setRegisters8Bit(&reg, "L", swappedNibles);
 			if (swappedNibles == 0) {
-				flags.N = true;
+				flags.Z = true;
 			}
 			else {
 				flags.Z = false;
@@ -2181,7 +2477,7 @@ void CPU::CB_SWAP_N(uint16_t opcode) {
 			swappedNibles = swapNibbles(mmu.read8(reg.HL));
 			mmu.write8(reg.HL, swappedNibles);
 			if (swappedNibles == 0) {
-				flags.N = true;
+				flags.Z = true;
 			}
 			else {
 				flags.Z = false;
@@ -2565,13 +2861,14 @@ void CPU::POP_NN(uint16_t opcode) {
 		case 0xD1:
 			mmu.pop(&nn);
 			mmu.setRegisters16Bit(&reg, "DE", nn);
+			//std::cout << "POP HL, PC value is: " << hex << static_cast<unsigned>(pc) << ", Value is: " << hex << static_cast<unsigned>(nn) << std::endl;
 			pc++;
 			addCycles(12);
 			break;
 		case 0xE1:
 			mmu.pop(&nn);
 			mmu.setRegisters16Bit(&reg, "HL", nn);
-			std::cout << "POP HL, PC value is: " << hex << static_cast<unsigned>(pc) << ", Value is: " << hex << static_cast<unsigned>(nn) << std::endl;
+			//std::cout << "POP HL, PC value is: " << hex << static_cast<unsigned>(pc) << ", Value is: " << hex << static_cast<unsigned>(nn) << std::endl;
 			pc++;
 			addCycles(12);
 			break;
@@ -2585,25 +2882,25 @@ void CPU::PUSH_NN(uint16_t opcode) {
 	switch (opcode)
 	{
 	case 0xF5:
-		std::cout << "Pushing AF: " << hex << static_cast<unsigned>(reg.AF) << std::endl;
+		//std::cout << "Pushing AF: " << hex << static_cast<unsigned>(reg.AF) << std::endl;
 		mmu.push(reg.AF);
 		pc++;
 		addCycles(16);
 		break;
 	case 0xC5:
-		std::cout << "Pushing BC: " << hex << static_cast<unsigned>(reg.BC) << std::endl;
+		//std::cout << "Pushing BC: " << hex << static_cast<unsigned>(reg.BC) << std::endl;
 		mmu.push(reg.BC);
 		pc++;
 		addCycles(16);
 		break;
 	case 0xD5:
-		std::cout << "Pushing DE: " << hex << static_cast<unsigned>(reg.DE) << std::endl;
+		//std::cout << "Pushing DE: " << hex << static_cast<unsigned>(reg.DE) << std::endl;
 		mmu.push(reg.DE);
 		pc++;
 		addCycles(16);
 		break;
 	case 0xE5:
-		std::cout << "Pushing HL: " << hex << static_cast<unsigned>(reg.HL) << std::endl;
+		//std::cout << "Pushing HL: " << hex << static_cast<unsigned>(reg.HL) << std::endl;
 		mmu.push(reg.HL);
 		pc++;
 		addCycles(16);
@@ -2756,7 +3053,7 @@ void CPU::RES_B_R(uint16_t opcode) {
 			break;
 		case 0x87:
 			n = (reg.A & ~(1 << 0));
-			std::cout << "Reseting bit 0 of A: " << hex << static_cast<unsigned>(reg.A) << " with reg.A & ~(1 << 0): " << hex << static_cast<unsigned>(n) << std::endl;
+			//std::cout << "Reseting bit 0 of A: " << hex << static_cast<unsigned>(reg.A) << " with reg.A & ~(1 << 0): " << hex << static_cast<unsigned>(n) << std::endl;
 			mmu.setRegisters8Bit(&reg, "A", n);
 			pc++;
 			addCycles(8);
@@ -3102,6 +3399,54 @@ void CPU::RES_B_R(uint16_t opcode) {
 	}
 }
 
+void CPU::RET_CC(uint16_t opcode) {
+	switch (opcode)
+	{
+	case 0xC0:
+		if (!flags.Z) {
+			RET();
+			addCycles(8);
+		}
+		else {
+			pc++;
+		}
+		break;
+
+	case 0xC8:
+		if (flags.Z) {
+			RET();
+			addCycles(8);
+		}
+		else {
+			pc++;
+		}
+		break;
+
+	case 0xD0:
+		if (!flags.C) {
+			RET();
+			addCycles(8);
+		}
+		else {
+			pc++;
+		}
+		break;
+
+	case 0xD8:
+		if (flags.C) {
+			RET();
+			addCycles(8);
+		}
+		else {
+			pc++;
+		}
+		break;
+
+	default:
+		break;
+	}
+}
+
 GameboyFlags *CPU::getFlagState() {
 	return &flags;
 }
@@ -3139,7 +3484,8 @@ void CPU::loadGame(const char* path) {
 	game.close();
 }
 
-/*void CPU::loadBIOS() {
+
+void CPU::loadBIOS() {
 	const uint8_t bios[0x100] = {
 	0x31, 0xFE, 0xFF, 0xAF, 0x21, 0xFF, 0x9F, 0x32, 0xCB, 0x7C, 0x20, 0xFB, 0x21, 0x26, 0xFF, 0x0E,
 	0x11, 0x3E, 0x80, 0x32, 0xE2, 0x0C, 0x3E, 0xF3, 0xE2, 0x32, 0x3E, 0x77, 0x77, 0x3E, 0xFC, 0xE0,
@@ -3163,4 +3509,4 @@ void CPU::loadGame(const char* path) {
 	for (int x = 0; x < 0x100; x++) {
 		mmu.bios[x] = bios[x];
 	}
-}*/
+}

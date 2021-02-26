@@ -69,6 +69,12 @@ uint8_t MMU::read8(uint16_t addr) {
 void MMU::write(uint16_t addr, uint16_t value) {
 	write8(addr, value >> 8);
 	write8(addr+1, (uint8_t)value);
+
+
+	if (addr == 0xFF46) {
+		std::cout << "Doing DMA transfer" << std::endl;
+		DMATransfer(value);
+	}
 }
 
 
@@ -108,8 +114,9 @@ void MMU::write8(uint16_t addr, uint8_t value) {
 			ram[addr - 0xE000] = value;
 			break;
 		case 0xE00:
-			if (addr >= 0xfea0) {
-				sprite_attrib[addr - 0xFEA0] = value;
+			if (addr >= 0xFE00 || addr <= 0xFEA0) {
+				sprite_attrib[addr - 0xFE00] = value;
+				//std::cout << "Writing value in address: " << std::hex << static_cast<unsigned>(addr) << " Real is: " << static_cast<unsigned>(addr - 0xFE00) << " Value written: " << static_cast<unsigned>(value) << std::endl;
 				break;
 			}
 			else {
@@ -121,6 +128,14 @@ void MMU::write8(uint16_t addr, uint8_t value) {
 				break;
 			}
 			else {
+				if (addr == 0xFF47) {
+					//std::cout << "Writing value in address: " << std::hex << static_cast<unsigned>(addr) << " Value written: " << static_cast<unsigned>(value) << std::endl;
+
+				}
+				if (addr == 0xFF46) {
+					std::cout << "Doing DMA transfer" << std::endl;
+					DMATransfer(value);
+				}
 				io[addr - 0xff00] = value;
 				break;
 			}
@@ -133,18 +148,25 @@ void MMU::write8(uint16_t addr, uint8_t value) {
 	}
 }
 
-void MMU::push(uint16_t value) {
-	if (value > 0xFF) {
-		sp--;
-		write8(sp, value >> 8);
+void MMU::DMATransfer(uint8_t value) {
+	uint16_t address = value * 100; //Multiply value by 100 but instead of multiply, we shift left 8 positions
+
+	for (int x = 0; x < 0xA0; x++) {
+		write8(0xFE00 + x, read8(address + x));
+		std::cout << "Writing in " << 0xFE00 + x << " value: " << static_cast<unsigned>(read8(address + x)) << std::endl;
 	}
+}
+
+void MMU::push(uint16_t value) {
+	sp--;
+	write8(sp, value >> 8);
 	sp--;
 	write8(sp, (uint8_t)value);
 }
 
 void MMU::pop(uint16_t *value) {
 	//std::cout << "POP Values: sp, sp + 1 << 8" << hex << static_cast<unsigned>((read8(sp) | read8(sp + 1) << 8)) << std::endl;
-	*value = ((read8(sp) | read8(sp + 1) << 8));
+	*value = read(sp);
 	sp+=2;
 }
 
