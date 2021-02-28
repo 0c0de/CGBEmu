@@ -1,2 +1,8 @@
-﻿  main.cpp
-  CGBEmu.vcxproj -> C:\Users\josel\CGBEmu\Debug\CGBEmu.exe
+﻿  CPU.cpp
+c:\users\josel\projects\cgbemu\cgbemu\cpu.cpp(459): warning C4554: "&": compruebe la prioridad de operador para posibles errores; utilice paréntesis para indicar la prioridad
+c:\users\josel\projects\cgbemu\cgbemu\cpu.cpp(468): warning C4554: "&": compruebe la prioridad de operador para posibles errores; utilice paréntesis para indicar la prioridad
+c:\users\josel\projects\cgbemu\cgbemu\cpu.cpp(1528): warning C4244: 'argumento': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
+c:\users\josel\projects\cgbemu\cgbemu\cpu.cpp(2029): warning C4244: 'argumento': conversión de 'uint16_t' a 'uint8_t'; posible pérdida de datos
+c:\users\josel\projects\cgbemu\cgbemu\cpu.cpp(3021): warning C4101: 'nn': variable local sin referencia
+c:\users\josel\projects\cgbemu\cgbemu\cpu.cpp(3608): warning C4244: 'inicializando': conversión de 'std::streamoff' a 'int'; posible pérdida de datos
+  CGBEmu.vcxproj -> C:\Users\josel\Projects\CGBEmu\Debug\CGBEmu.exe

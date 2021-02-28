@@ -26,7 +26,7 @@ void runApp() {
 	int cyclesMainLoop = 0;
 
 
-	mainWindow = SDL_CreateWindow("CGB++", 150, 150, 160, 144, (SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI));
+	mainWindow = SDL_CreateWindow("CGB++", 0, 100, 160, 144, (SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI));
 	debuggerWindow = SDL_CreateWindow("Debugger CGB++", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, (SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI));
 	render = SDL_CreateRenderer(mainWindow, -1, SDL_RENDERER_ACCELERATED);
 	debuggerRender = SDL_CreateRenderer(debuggerWindow, 0, SDL_RENDERER_ACCELERATED);
@@ -62,11 +62,11 @@ void runApp() {
 	//Load the game specified
 	//gameboy.loadGame("games/hello_world.gb");
 	//For PC
-	gameboy.loadGame("E:/Tetris.gb");
+	//gameboy.loadGame("E:/Tetris.gb");
 	//gameboy.loadGame("E:/Dr. Mario (World).gb");
 	//gameboy.loadGame("E:/cpu_instrs.gb");
 	//For laptop
-	//gameboy.loadGame("D:/Tetris.gb");
+	gameboy.loadGame("C:/ROMS/Tetris.gb");
 	std::thread t1(&CPU::runCPU, &gameboy, &gpu, render);
 	//gameboy.runLife();
 	//gameboy.loadGame("E:/hello-world.gb");

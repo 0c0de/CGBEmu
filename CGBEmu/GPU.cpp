@@ -139,36 +139,6 @@ void GPU::changeModeGPU(MMU *mmu, uint8_t gpuMode) {
 
 	uint8_t bit1 = lcdStatValue;
 	uint8_t bit2 = 0;
-	/*
-	switch (gpuMode)
-	{
-	case 0: //HBlank
-		bit1 = clearBit(lcdStatValue, 1);
-		bit2 = clearBit(lcdStatValue, 0);
-		mmu->write8(0xFF41, bit2);
-		break;
-
-	case 1: //VBlank
-		bit1 = clearBit(lcdStatValue, 1);
-		bit2 = setBit(lcdStatValue, 0);
-		mmu->write8(0xFF41, bit2);
-		break;
-
-	case 2: //OAM
-		bit1 = setBit(lcdStatValue, 1);
-		bit2 = clearBit(lcdStatValue, 0);
-		mmu->write8(0xFF41, bit2);
-		break;
-
-	case 3: //LCD Transfer
-		bit1 = setBit(lcdStatValue, 1);
-		bit2 = setBit(lcdStatValue, 0);
-		mmu->write8(0xFF41, bit2);
-		break;
-	default:
-		break;
-	}
-	*/
 
 }
 
@@ -178,22 +148,6 @@ Este es un comentario en ESPAÑOL para los putos guiris que intente copiar el cód
 */
 
 void GPU::renderFramebuffer(SDL_Renderer *render) {
-	/*GLuint texture;
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	// set the texture wrapping/filtering options (on the currently bound texture object)
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	// load and generate the texture
-	int width = 160;
-	int height = 144;
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, framebuffer);
-	//glGenerateMipmap(GL_TEXTURE_2D);
-
-	*textureRetruned = texture;*/
 
 	for (int x = 0; x < 160; x++) {
 		for (int y = 0; y < 144; y++) {
@@ -238,19 +192,17 @@ uint8_t GPU::getColour(uint8_t colourNum, uint16_t address, MMU *mmu) {
 void GPU::DrawScanline(MMU* mmu) {
 	uint8_t n = mmu->read8(0xFF40);
 	//Can draw things
-	if (isKthBitSet(n, 7)) {
-		if (isKthBitSet(n, 0)) {
-			//Display Background
-			//std::cout << "Rendering background" << std::endl;
-			renderBackground(mmu);
+	if (isKthBitSet(n, 0)) {
+		//Display Background
+		//std::cout << "Rendering background" << std::endl;
+		renderBackground(mmu);
 			
-		}
-		else {
-			//Display Sprites
-			//std::cout << "Rendering sprites" << std::endl;
-			renderSprites(mmu);
-		}
+	}else {
+		//Display Sprites
+		//std::cout << "Rendering sprites" << std::endl;
+		renderSprites(mmu);
 	}
+	
 }
 
 void GPU::renderBackground(MMU *mmu) {
@@ -524,7 +476,6 @@ void GPU::step(uint16_t cycles, MMU *mmu, SDL_Renderer *render, Interrupt *inter
 					changeModeGPU(mmu, 1);
 					
 					interr->requestInterrupt(mmu, 0);
-					//gameboy->requestInterrupt(mmu, 0);
 					//TODO: Write a function that write data into the SDL Render
 					renderFramebuffer(render);
 					SDL_RenderPresent(render);

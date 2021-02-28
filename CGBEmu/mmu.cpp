@@ -6,6 +6,15 @@ using namespace std;
 
 //CPU cpus;
 
+bool isKthBitSet(uint8_t n, uint8_t k) {
+	if (n & (1 << k)) {
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
 uint16_t MMU::read(uint16_t addr) {
 	return read8(addr) + (read8(addr + 1) << 8);
 }
@@ -133,7 +142,7 @@ void MMU::write8(uint16_t addr, uint8_t value) {
 
 				}
 				if (addr == 0xFF46) {
-					std::cout << "Doing DMA transfer" << std::endl;
+					//std::cout << "Doing DMA transfer" << std::endl;
 					DMATransfer(value);
 				}
 				io[addr - 0xff00] = value;
@@ -153,7 +162,7 @@ void MMU::DMATransfer(uint8_t value) {
 
 	for (int x = 0; x < 0xA0; x++) {
 		write8(0xFE00 + x, read8(address + x));
-		std::cout << "Writing in " << 0xFE00 + x << " value: " << static_cast<unsigned>(read8(address + x)) << std::endl;
+		//std::cout << "Writing in " << 0xFE00 + x << " value: " << static_cast<unsigned>(read8(address + x)) << std::endl;
 	}
 }
 
@@ -165,13 +174,44 @@ void MMU::push(uint16_t value) {
 }
 
 void MMU::pop(uint16_t *value) {
-	//std::cout << "POP Values: sp, sp + 1 << 8" << hex << static_cast<unsigned>((read8(sp) | read8(sp + 1) << 8)) << std::endl;
-	*value = read(sp);
-	sp+=2;
+	uint8_t n = read8(sp);
+	sp++;
+	uint8_t nn = read8(sp);
+	sp++;
+	*value = n | nn << 8;
 }
 
-void MMU::setRegisters16Bit(GameboyRegisters *reg, const char *regName, uint16_t valueToSet) {
+void MMU::setRegisters16Bit(GameboyRegisters *reg, const char *regName, uint16_t valueToSet, GameboyFlags* flags) {
 	if (regName == "AF") {
+
+		if (isKthBitSet((uint8_t)valueToSet, 7)) {
+			flags->Z = true;
+		}
+		else {
+			flags->Z = false;
+		}
+
+		if (isKthBitSet((uint8_t)valueToSet, 6)) {
+			flags->N = true;
+		}
+		else {
+			flags->N = false;
+		}
+
+		if (isKthBitSet((uint8_t)valueToSet, 5)) {
+			flags->H = true;
+		}
+		else {
+			flags->H = false;
+		}
+
+		if (isKthBitSet((uint8_t)valueToSet, 4)) {
+			flags->C = true;
+		}
+		else {
+			flags->C = false;
+		}
+
 		reg->A = (valueToSet >> 8);
 		reg->F = (uint8_t)valueToSet;
 		reg->AF = valueToSet;
@@ -192,7 +232,7 @@ void MMU::setRegisters16Bit(GameboyRegisters *reg, const char *regName, uint16_t
 	}
 }
 
-void MMU::setRegisters8Bit(GameboyRegisters *reg, const char *regName, uint8_t valueToSet) {
+void MMU::setRegisters8Bit(GameboyRegisters *reg, const char *regName, uint8_t valueToSet, GameboyFlags* flags) {
 	if (regName == "A") {
 		reg->A = valueToSet;
 		reg->AF = ((reg->A << 8) | (reg->F));

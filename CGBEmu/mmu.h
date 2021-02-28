@@ -82,10 +82,10 @@ class MMU {
 		void pop(uint16_t *value);
 
 		//Function for setting 16bit registers
-		void setRegisters16Bit(GameboyRegisters *reg, const char *regName, uint16_t valueToSet);
+		void setRegisters16Bit(GameboyRegisters *reg, const char *regName, uint16_t valueToSet, GameboyFlags *flags = NULL);
 
 		//Function for setting 8bit registers
-		void setRegisters8Bit(GameboyRegisters *reg, const char *regName, uint8_t valueToSet);
+		void setRegisters8Bit(GameboyRegisters *reg, const char *regName, uint8_t valueToSet, GameboyFlags *flags = NULL);
 
 
 	private:

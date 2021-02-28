@@ -268,7 +268,7 @@ private:
 
 	//SLA n
 	//Shift n left into Carry. LSB of n set to 0.
-	void SLA_N();
+	void SLA_N(uint16_t opcode);
 
 	//SRA n
 	//Shift n right into Carry. MSB doesn't change

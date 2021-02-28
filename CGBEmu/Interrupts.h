@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <iostream>
 #include "mmu.h"
+#include <bitset>
 
 class Interrupt
 {
