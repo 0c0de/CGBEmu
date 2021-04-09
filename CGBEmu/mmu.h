@@ -63,6 +63,9 @@ class MMU {
 		//Stack Pointer
 		uint16_t sp;
 
+		//Is in bios
+		bool isInBios;
+
 		//Read 16 Bit address
 		uint16_t read(uint16_t addr);
 

@@ -23,6 +23,11 @@ uint8_t MMU::read8(uint16_t addr) {
 	switch (addr & 0xf000)
 	{
 	case 0x0000:
+		if (isInBIOS) {
+			return bios[addr];
+		}
+
+		return rom[addr];
 	case 0x1000:
 	case 0x2000:
 	case 0x3000:
@@ -42,30 +47,40 @@ uint8_t MMU::read8(uint16_t addr) {
 	case 0xD000:
 		return wram[addr - 0xC000];
 	case 0xE000:
-		return ram[addr - 0xE000];
+		return wram[addr - 0xE000];
 	case 0xF000:
 		switch (addr & 0x0F00)
 		{
 		case 0x0000: case 0x0100: case 0x0200: case 0x0300: case 0x0400: case 0x0500: case 0x0600:
 		case 0x0700: case 0x0800: case 0x0900: case 0x0A00: case 0x0B00: case 0x0C00: case 0x0D00:
-			return ram[addr - 0xE000];
+			return wram[addr - 0xE000];
 			break;
 		case 0xE00:
-			if (addr >= 0xfea0) {
-				return sprite_attrib[addr - 0xfea0];
+			if (addr >= 0xFE00 && addr < 0xfea0) {
+				return sprite_attrib[addr - 0xfe00];
 			}
 			else {
 				return 0;
 			}
 		case 0xF00:
-			if (addr >= 0xff80) {
+
+			if (addr >= 0xff80 && addr < 0xFFFE) {
+
 				return internal_ram[addr - 0xff80];
+				break;
 			}
-			else {
-				//Handle IO Things
+
+			if (addr >= 0xFF00 && addr < 0xFF80) {
+			
+				if (addr == 0xFF00) {
+					return returnJoyPadState();
+				}
+
 				return io[addr - 0xff00];
+				break;
 			}
 			break;
+			
 		}
 		break;
 	default:
@@ -81,7 +96,7 @@ void MMU::write(uint16_t addr, uint16_t value) {
 
 
 	if (addr == 0xFF46) {
-		std::cout << "Doing DMA transfer" << std::endl;
+		//std::cout << "Doing DMA transfer" << std::endl;
 		DMATransfer(value);
 	}
 }
@@ -113,42 +128,60 @@ void MMU::write8(uint16_t addr, uint8_t value) {
 		wram[addr - 0xC000] = value;
 		break;
 	case 0xE000:
-		ram[addr - 0xE000] = value;
+		wram[addr - 0xE000] = value;
 		break;
 	case 0xF000:
 		switch (addr & 0x0F00)
 		{
 		case 0x0000: case 0x0100: case 0x0200: case 0x0300: case 0x0400: case 0x0500: case 0x0600:
 		case 0x0700: case 0x0800: case 0x0900: case 0x0A00: case 0x0B00: case 0x0C00: case 0x0D00:
-			ram[addr - 0xE000] = value;
+			wram[addr - 0xE000] = value;
 			break;
 		case 0xE00:
-			if (addr >= 0xFE00 || addr <= 0xFEA0) {
+			if (addr >= 0xFE00 && addr <= 0xFE9F) {
 				sprite_attrib[addr - 0xFE00] = value;
 				//std::cout << "Writing value in address: " << std::hex << static_cast<unsigned>(addr) << " Real is: " << static_cast<unsigned>(addr - 0xFE00) << " Value written: " << static_cast<unsigned>(value) << std::endl;
 				break;
 			}
-			else {
-				break;
-			}
+			break;
 		case 0xF00:
-			if (addr >= 0xff80) {
-				internal_ram[addr - 0xFF80] = value;
-				break;
-			}
-			else {
-				if (addr == 0xFF47) {
-					//std::cout << "Writing value in address: " << std::hex << static_cast<unsigned>(addr) << " Value written: " << static_cast<unsigned>(value) << std::endl;
 
-				}
+			if (addr >= 0xFF00 && addr < 0xFF80) {
+
 				if (addr == 0xFF46) {
 					//std::cout << "Doing DMA transfer" << std::endl;
 					DMATransfer(value);
+					break;
 				}
+
+				//Handle IO Things
 				io[addr - 0xff00] = value;
 				break;
 			}
+
+			if (addr >= 0xff80 && addr < 0xFFFE) {
+
+				if (addr == 0xFF80) {
+					std::cout << "Writing in 0xFF80 checking for the game" << std::endl;
+					char tempGameName[0xF];
+					for (int a = 0x0; a < 0xF; a++) {
+						uint8_t valueRet = read8(0x134 + a);
+						tempGameName[a] = valueRet;
+					}
+					
+					std::string gameName = tempGameName;
+					if (gameName == "TETRIS") {
+						std::cout << "Detected tetris applying patch..." << std::endl;
+						return;
+						break;
+					}
+				}
+
+				internal_ram[addr - 0xff80] = value;
+				break;
+			}
 			break;
+			
 		}
 		break;
 	default:
@@ -158,7 +191,7 @@ void MMU::write8(uint16_t addr, uint8_t value) {
 }
 
 void MMU::DMATransfer(uint8_t value) {
-	uint16_t address = value * 100; //Multiply value by 100 but instead of multiply, we shift left 8 positions
+	uint16_t address = value << 8; //Multiply value by 100 but instead of multiply, we shift left 8 positions
 
 	for (int x = 0; x < 0xA0; x++) {
 		write8(0xFE00 + x, read8(address + x));

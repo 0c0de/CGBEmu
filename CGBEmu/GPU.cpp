@@ -63,62 +63,6 @@ bool GPU::bgUsed(MMU* mmu) {
 	return isKthBitSet(n, 3);
 }
 
-/*void GPU::DrawScreen(MMU *mmu) {
-	for (int i = 0; i < 160; i++) {
-		for (int x = 0; x < 8; x++) {
-			for (int y = 0; y < 8; y++) {
-				//0x3
-				if (palette[i][x][y] == 3) {
-					framebuffer[(i * 8 % 160) - x + (y + i * 8 / 160 * 8) * 160] = 0x3e0800;
-				}
-
-				//0x2
-				if (palette[i][x][y] == 2) {
-					framebuffer[(i * 8 % 160) - x + (y + i * 8 / 160 * 8) * 160] = 0xa33e31;
-				}
-
-				//0x1
-				if (palette[i][x][y] == 1) {
-					framebuffer[(i * 8 % 160) - x + (y + i * 8 / 160 * 8) * 160] = 0xd78169;
-				}
-
-				//0x0
-				if (palette[i][x][y] == 0) {
-					framebuffer[(i * 8 % 160) - x + (y + i * 8 / 160 * 8) * 160] = 0xf3c5b1;
-				}
-
-			}
-		}
-	}
-}*/
-
-void GPU::updateVRAM(MMU *mmu, uint8_t idx, uint16_t address1, uint16_t address2, uint8_t currLine, bool isBG) {
-	if (!isBG) {
-		for (int x = 0; x < 8; x++) {
-			//0x3
-			if (isKthBitSet(mmu->read8(address1), x) && isKthBitSet(mmu->read8(address2), x)) {
-				uint8_t tt = idx;
-				palette[idx][x][currLine] = 3;
-			}
-
-			//0x2
-			if (!isKthBitSet(mmu->read8(address1), x) && isKthBitSet(mmu->read8(address2), x)) {
-				uint8_t tt = idx;
-				palette[idx][x][currLine] = 2;
-			}
-
-			//0x1
-			if (isKthBitSet(mmu->read8(address1), x) && !isKthBitSet(mmu->read8(address2), x)) {
-				uint8_t tt = idx;
-				palette[idx][x][currLine] = 1;
-			}
-		}
-	}
-	else {
-		
-	}
-}
-
 uint8_t GPU::clearBit(uint8_t value, uint8_t bitToReset) {
 	uint8_t bitCleared = value & ~(1 << bitToReset);
 
@@ -164,8 +108,8 @@ void GPU::renderFramebuffer(SDL_Renderer *render) {
 uint8_t GPU::getColour(uint8_t colourNum, uint16_t address, MMU *mmu) {
 	uint8_t res = 0; //Full white
 	uint8_t palette = mmu->read8(address);
-	int hi = 0;
-	int lo = 0;
+	uint8_t hi = 0;
+	uint8_t lo = 0;
 
 	// which bits of the colour palette does the colour id map to?
 	switch (colourNum)
@@ -177,12 +121,12 @@ uint8_t GPU::getColour(uint8_t colourNum, uint16_t address, MMU *mmu) {
 	}
 
 	// use the palette to get the colour
-	int colour = 0;
+	uint8_t colour = 0;
 	colour = BitGetVal(palette, hi) << 1;
 	colour |= BitGetVal(palette, lo);
 
 	// convert the game colour to emulator colour
-	
+
 	res = colour;
 
 	return res;
@@ -192,15 +136,18 @@ uint8_t GPU::getColour(uint8_t colourNum, uint16_t address, MMU *mmu) {
 void GPU::DrawScanline(MMU* mmu) {
 	uint8_t n = mmu->read8(0xFF40);
 	//Can draw things
-	if (isKthBitSet(n, 0)) {
-		//Display Background
-		//std::cout << "Rendering background" << std::endl;
-		renderBackground(mmu);
-			
-	}else {
-		//Display Sprites
-		//std::cout << "Rendering sprites" << std::endl;
-		renderSprites(mmu);
+	if (isKthBitSet(n, 7)) {
+		if (isKthBitSet(n, 0)) {
+			//Display Background
+			//std::cout << "Rendering background" << std::endl;
+			renderBackground(mmu);
+		}
+
+		if (isKthBitSet(n, 1)) {
+			//Display Sprites
+			//std::cout << "Rendering sprites" << std::endl;
+			renderSprites(mmu);
+		}
 	}
 	
 }
@@ -209,7 +156,7 @@ void GPU::renderBackground(MMU *mmu) {
 
 	uint16_t tileData = 0;
 	uint16_t backgroundMemory = 0;
-	uint8_t lcdControl = 0xFF40;
+	uint8_t lcdControl = mmu->read8(0xFF40);
 	bool unsig = true;
 
 	// where to draw the visual area and the window
@@ -274,7 +221,7 @@ void GPU::renderBackground(MMU *mmu) {
 
 	// time to start drawing the 160 horizontal pixels
 	// for this scanline
-	for (int pixel = 0; pixel < 160; pixel++)
+	for (uint8_t pixel = 0; pixel < 160; pixel++)
 	{
 		uint8_t xPos = pixel + scrollX;
 
@@ -315,35 +262,43 @@ void GPU::renderBackground(MMU *mmu) {
 		line *= 2; // each vertical line takes up two bytes of memory
 		uint8_t data1 = mmu->read8(tileLocation + line);
 		uint8_t data2 = mmu->read8(tileLocation + line + 1);
+		if (mmu->read8(0x9000) > 0) {
+			//std::cout << "Reading line: " << std::hex << static_cast<unsigned>(tileLocation + line) << std::endl;
+		}
 
 		// pixel 0 in the tile is it 7 of data 1 and data2.
 		// Pixel 1 is bit 6 etc..
-		int colourBit = xPos % 8;
+		uint8_t colourBit = xPos % 8;
 		colourBit -= 7;
 		colourBit *= -1;
 
 		// combine data 2 and data 1 to get the colour id for this pixel
 		// in the tile
-		int colourNum = BitGetVal(data2, colourBit);
+		uint8_t colourNum = BitGetVal(data2, colourBit);
 		colourNum <<= 1;
 		colourNum |= BitGetVal(data1, colourBit);
+
+		if (mmu->read8(0x9000) > 0) {
+			//std::cout << "Reading line: " << std::hex << static_cast<unsigned>(tileLocation + line) << ": " << static_cast<unsigned>(mmu->read8(tileLocation + line)) << " and " << static_cast<unsigned>(tileLocation + line + 1) << ": " << static_cast<unsigned>(mmu->read8(tileLocation + line)) << std::endl;
+		}
 
 		// now we have the colour id get the actual
 		// colour from palette 0xFF47
 		uint8_t col = getColour(colourNum, 0xFF47, mmu);
-		int red = 0;
-		int green = 0;
-		int blue = 0;
+		uint8_t red = 0;
+		uint8_t green = 0;
+		uint8_t blue = 0;
 
 		// setup the RGB values
 		switch (col)
 		{
-		case 0: red = 255; green = 255; blue = 255; break;
-		case 1:red = 0xCC; green = 0xCC; blue = 0xCC; break;
+		case 0: red = 0xFF; green = 0xFF; blue = 0xFF; break;
+		case 1: red = 0xCC; green = 0xCC; blue = 0xCC; break;
 		case 2: red = 0x77; green = 0x77; blue = 0x77; break;
+		case 3: red = 0x0; green = 0x0; blue = 0x0; break;
 		}
 
-		int finaly = mmu->read8(0xFF44);
+		uint8_t finaly = mmu->read8(0xFF44);
 
 		// safety check to make sure what im about
 		// to set is int the 160x144 bounds
@@ -362,7 +317,7 @@ void GPU::renderBackground(MMU *mmu) {
 void GPU::renderSprites(MMU *mmu) {
 
 	bool use8x16 = false;
-	uint8_t lcdControl = 0xFF40;
+	uint8_t lcdControl = mmu->read8(0xFF40);
 
 	if (isKthBitSet(lcdControl, 2))
 		use8x16 = true;
@@ -386,6 +341,7 @@ void GPU::renderSprites(MMU *mmu) {
 		if (use8x16)
 			ysize = 16;
 
+		if ((scanline >= yPos) && (scanline < (yPos + ysize))) {
 			int line = scanline - yPos;
 
 			// read the sprite in backwards in the y axis
@@ -422,18 +378,20 @@ void GPU::renderSprites(MMU *mmu) {
 				uint8_t col = getColour(colourNum, colourAddress, mmu);
 
 				// white is transparent for sprites.
-				if (col == 0)
+				if (col == 0) {
 					continue;
+				}
 
-				int red = 0;
-				int green = 0;
-				int blue = 0;
+				uint8_t red = 0;
+				uint8_t green = 0;
+				uint8_t blue = 0;
 
+				
 				switch (col)
 				{
 				case 0: red = 255; green = 255; blue = 255; break;
-				case 1:red = 0xCC; green = 0xCC; blue = 0xCC; break;
-				case 2:red = 0x77; green = 0x77; blue = 0x77; break;
+				case 1: red = 0xCC; green = 0xCC; blue = 0xCC; break;
+				case 2: red = 0x77; green = 0x77; blue = 0x77; break;
 				}
 
 				int xPix = 0 - tilePixel;
@@ -441,7 +399,6 @@ void GPU::renderSprites(MMU *mmu) {
 
 				int pixel = xPos + xPix;
 
-				// sanity check
 				if ((scanline < 0) || (scanline > 143) || (pixel < 0) || (pixel > 159))
 				{
 					continue;
@@ -451,12 +408,16 @@ void GPU::renderSprites(MMU *mmu) {
 				framebuffer[pixel][scanline][1] = green;
 				framebuffer[pixel][scanline][2] = blue;
 			}
-		
+		}
 	}
 
 }
 
 void GPU::step(uint16_t cycles, MMU *mmu, SDL_Renderer *render, Interrupt *interr) {
+	if (line > 153) {
+		line = 0;
+	}
+
 	if (isScreenEnabled(mmu)) {
 		clock += cycles;
 		switch (mode)
@@ -466,20 +427,19 @@ void GPU::step(uint16_t cycles, MMU *mmu, SDL_Renderer *render, Interrupt *inter
 			//std::cout << "Entering Horizontal Blanking" << std::endl;
 			if (clock >= 204) {
 				clock = 0;
-
 				line++;
-
 				mmu->write8(0xFF44, line);
 
 				if (line == 143) {
 					//Enter in Vertical Blanking Mode
 					changeModeGPU(mmu, 1);
+
 					
 					interr->requestInterrupt(mmu, 0);
 					//TODO: Write a function that write data into the SDL Render
 					renderFramebuffer(render);
 					SDL_RenderPresent(render);
-					std::cout << "Writing data from framebuffer" << std::endl;
+					//std::cout << "Writing data from framebuffer" << std::endl;
 				}
 				else {
 					changeModeGPU(mmu, 2);
@@ -534,5 +494,9 @@ void GPU::step(uint16_t cycles, MMU *mmu, SDL_Renderer *render, Interrupt *inter
 			}
 			break;
 		}
+	}
+
+	if (mmu->read8(0xFF44) == mmu->read8(0xFF45)) {
+		//interr->requestInterrupt(mmu, 1);
 	}
 }

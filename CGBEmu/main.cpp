@@ -5,6 +5,7 @@
 #include "GUI.h"
 #include <bitset>
 
+
 using namespace std;
 
 void runApp() {
@@ -52,7 +53,6 @@ void runApp() {
 
 	//Instantiate class GPU of the gameboy emulator
 	GPU gpu;
-
 	//Instantiate class CPU of the gameboy emulator
 	CPU gameboy;
 	//Init gameboy with some default values
@@ -62,11 +62,11 @@ void runApp() {
 	//Load the game specified
 	//gameboy.loadGame("games/hello_world.gb");
 	//For PC
-	//gameboy.loadGame("E:/Tetris.gb");
-	//gameboy.loadGame("E:/Dr. Mario (World).gb");
+	//gameboy.loadGame("E:/tetris.gb");
+	gameboy.loadGame("E:/Dr. Mario (World).gb");
 	//gameboy.loadGame("E:/cpu_instrs.gb");
 	//For laptop
-	gameboy.loadGame("C:/ROMS/Tetris.gb");
+	//gameboy.loadGame("C:/ROMS/Tetris.gb");
 	std::thread t1(&CPU::runCPU, &gameboy, &gpu, render);
 	//gameboy.runLife();
 	//gameboy.loadGame("E:/hello-world.gb");
@@ -100,6 +100,75 @@ void runApp() {
 							break;
 					}
 						
+				}
+
+				if (sdlEvent.type == SDL_KEYDOWN) {
+					if (sdlEvent.key.keysym.sym == SDLK_z) {
+						gameboy.setKey(4);
+					}
+
+					if (sdlEvent.key.keysym.sym == SDLK_x) {
+						gameboy.setKey(5);
+					}
+
+					if (sdlEvent.key.keysym.sym == SDLK_SPACE) {
+						gameboy.setKey(6);
+					}
+
+					if (sdlEvent.key.keysym.sym == SDLK_KP_ENTER) {
+						gameboy.setKey(7);
+					}
+
+					if (sdlEvent.key.keysym.sym == SDLK_UP) {
+						gameboy.setKey(2);
+					}
+
+					if (sdlEvent.key.keysym.sym == SDLK_DOWN) {
+						gameboy.setKey(3);
+					}
+
+					if (sdlEvent.key.keysym.sym == SDLK_LEFT) {
+						gameboy.setKey(1);
+					}
+
+					if (sdlEvent.key.keysym.sym == SDLK_RIGHT) {
+						gameboy.setKey(0);
+					}
+				}
+
+
+				if (sdlEvent.type == SDL_KEYUP) {
+					if (sdlEvent.key.keysym.sym == SDLK_z) {
+						gameboy.releaseKey(4);
+					}
+
+					if (sdlEvent.key.keysym.sym == SDLK_x) {
+						gameboy.releaseKey(5);
+					}
+
+					if (sdlEvent.key.keysym.sym == SDLK_SPACE) {
+						gameboy.releaseKey(6);
+					}
+
+					if (sdlEvent.key.keysym.sym == SDLK_KP_ENTER) {
+						gameboy.releaseKey(7);
+					}
+
+					if (sdlEvent.key.keysym.sym == SDLK_UP) {
+						gameboy.releaseKey(2);
+					}
+
+					if (sdlEvent.key.keysym.sym == SDLK_DOWN) {
+						gameboy.releaseKey(3);
+					}
+
+					if (sdlEvent.key.keysym.sym == SDLK_LEFT) {
+						gameboy.releaseKey(1);
+					}
+
+					if (sdlEvent.key.keysym.sym == SDLK_RIGHT) {
+						gameboy.releaseKey(0);
+					}
 				}
 			}
 

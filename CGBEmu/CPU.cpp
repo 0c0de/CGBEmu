@@ -4,6 +4,7 @@ MMU mmu;
 Interrupt interrupt;
 GameboyRegisters reg;
 GameboyFlags flags;
+Joypad joypad;
 
 
 uint8_t registerF = 0x00;
@@ -20,7 +21,7 @@ void CPU::init() {
 	mmu.setRegisters16Bit(&reg, "DE", 0x00D8);
 	mmu.setRegisters16Bit(&reg, "HL", 0x014D);
 
-	mmu.sp = 0xE000;
+	mmu.sp = 0xFFFE;
 
 	mmu.write8(0xFF00, 0xCF);
 	mmu.write8(0xFF05, 0x00);
@@ -84,6 +85,21 @@ MMU *CPU::getMMUValues() {
 	return &mmu;
 }
 
+uint8_t returnJoyPadState() {
+	if (&mmu != nullptr) {
+		return joypad.GetJoypadState(&mmu);
+	}
+}
+
+void CPU::setKey(uint8_t key) {
+	std::cout << "Key pressed: " << key << std::endl;
+	joypad.setButton(key, &mmu, &interrupt);
+}
+
+void CPU::releaseKey(uint8_t key) {
+	joypad.releaseButton(key, &mmu, &interrupt);
+}
+
 void CPU::runCPU(GPU *gpu, SDL_Renderer *render) {
 	uint8_t cb_opcode;
 	uint8_t opcode;
@@ -93,13 +109,15 @@ void CPU::runCPU(GPU *gpu, SDL_Renderer *render) {
 
 	while (isRuning)
 	{
+		if (pc >= 0x100) {
+			mmu.isInBios = false;
+		}
 		if (cicles < MAXCYCLES) {
 
 			if (isHalted) {
 				interrupt.checkForInterrupts(&mmu, &isHalted, &IME, &pc);
 			}
 			else {
-				interrupt.checkForInterrupts(&mmu, &isHalted, &IME, &pc);
 				opcode = mmu.read8(pc);
 
 				//Set the flags 
@@ -245,16 +263,14 @@ void CPU::runCPU(GPU *gpu, SDL_Renderer *render) {
 					//isSlow = true;
 				}*/
 
-				/*if (pc == 0x29b2) {
+				/*if (pc == 0x02fa) {
 					SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Gameboy Emulator C++", "Breakpoint reached please look gui", NULL);
 					cout << "PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
 					//isSlow = true;
 				}*/
 
 
-
-
-				mmu.write8(0xFF00, 0xFF);
+				//cout << "PC: " << hex << static_cast<unsigned>(pc) << "  |  Opcode: " << hex << static_cast<unsigned>(opcode) << endl;
 				switch (opcode) {
 				case 0x00:
 					NOP();
@@ -435,6 +451,9 @@ void CPU::runCPU(GPU *gpu, SDL_Renderer *render) {
 				if (isSlow) {
 					SDL_Delay(20);
 				}
+
+
+				//interrupt.checkForInterrupts(&mmu, &isHalted, &IME, &pc);
 
 			}
 				//getchar();
@@ -1758,7 +1777,7 @@ void CPU::LDH_N_A() {
 	uint8_t n = mmu.read8(pc + 1);
 	uint16_t memoryAdress = 0xFF00 + n;
 	uint8_t readedMemory = mmu.read8(memoryAdress);
-	std::cout << "Readed value from ff00: " << std::hex << static_cast<unsigned>(readedMemory) << std::endl;
+	//std::cout << "Readed value from ff00: " << std::hex << static_cast<unsigned>(readedMemory) << std::endl;
 	if (reg.A == 0x20) {
 		mmu.write8(memoryAdress, reg.A + readedMemory);
 	}
@@ -2987,7 +3006,7 @@ void CPU::POP_NN(uint16_t opcode) {
 	{
 		case 0xF1:
 			mmu.pop(&nn);
-			std::cout << "Poping values from stack to AF register: " << std::hex << static_cast<unsigned>(nn) << std::endl;
+			//std::cout << "Poping values from stack to AF register: " << std::hex << static_cast<unsigned>(nn) << std::endl;
 			mmu.setRegisters16Bit(&reg, "AF", nn, &flags);
 			pc++;
 			addCycles(12);

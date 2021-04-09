@@ -67,7 +67,7 @@ void drawMMU(MMU *mmu) {
 
 		if (showIO) {
 			ImGui::Text("IO");
-			ROMData.DrawContents((void*)(mmu->io), 0x4C);
+			ROMData.DrawContents((void*)(mmu->io),sizeof(mmu->io));
 		}
 
 		if (showSPRITEATTR) {
@@ -83,6 +83,8 @@ void drawMMU(MMU *mmu) {
 			ImGui::Text("0xFF43: %02x -> Scroll X", mmu->read8(0xFF43));
 			ImGui::Text("0xFF44: %02x -> Current Scan Line", mmu->read8(0xFF44));
 			ImGui::Text("0xFF47: %02x -> Backgorund palette", mmu->read8(0xFF47));
+			ImGui::Text("0xFF0F: %02x -> IF", mmu->read8(0xFF0F));
+			ImGui::Text("0xFFFF: %02x -> IE", mmu->read8(0xFFFF));
 
 			ImGui::Text("Stack Pointer: %04x", mmu->sp);
 		}

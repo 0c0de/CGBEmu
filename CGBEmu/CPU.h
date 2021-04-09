@@ -8,8 +8,11 @@
 #include <SDL.h>
 #include <vector>
 #include "GPU.h"
+#include "Joypad.h"
 using namespace std;
 //CPU is similar to Z80 but with modified instructions
+
+uint8_t returnJoyPadState();
 
 class CPU {
 
@@ -61,6 +64,12 @@ public:
 	//Will handle every 4 interrupts: V-sync, LCD, Timer, Joypad
 	//Addresses are: 0x40, 0x48, 0x50, 0x60 respectively
 	void doInterrupt(MMU *mmu, uint8_t bitToSearch);
+
+	void setKey(uint8_t key);
+
+	void releaseKey(uint8_t key);
+
+	uint8_t returnJoyPadState(MMU *mmu);
 
 private:
 
